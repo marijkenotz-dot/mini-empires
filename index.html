@@ -1,91 +1,71 @@
 <!doctype html>
 <html lang="de">
 <head>
-<meta charset="utf-8" />
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <meta name="theme-color" content="#0b1220">
-<title>Mini Empires – Mobile</title>
+<title>Mini Empires — Iso Mobile</title>
 <style>
-  :root{
-    --bg:#0b1220; --panel:#0f172a; --chip:#111827; --chip2:#1f2937; --text:#e5e7eb;
-    --accent:#22c55e; --accent2:#3b82f6; --danger:#ef4444; --gold:#f59e0b;
-  }
+  :root{--bg:#0b1220;--panel:#0f172a;--chip:#111827;--text:#e5e7eb;--accent:#3b82f6}
   html,body{height:100%;margin:0;background:var(--bg);color:var(--text);
-           font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-           -webkit-tap-highlight-color:transparent; touch-action:none;}
-  #wrap{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto;overflow:hidden}
-  /* HUD top chips */
+    font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-tap-highlight-color:transparent; touch-action:none}
+  #wrap{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto}
   #hud{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;padding:.5rem .75rem;z-index:20}
   .chip{background:var(--chip);border:1px solid #1f2937;border-radius:999px;padding:.35rem .6rem;
-        font-weight:700;box-shadow:0 2px 0 rgba(0,0,0,.35);display:flex;gap:.35rem;align-items:center}
-  .chip .dot{width:.6rem;height:.6rem;border-radius:50%}
-  .wood{background:#b38a5e}.food{background:#22c55e}.stone{background:#94a3b8}.gold{background:#f59e0b}
-  /* canvas */
-  #game{display:block;width:100%;height:100%;outline:none}
-  /* bottom bar */
+    font-weight:800;box-shadow:0 2px 0 rgba(0,0,0,.35);display:flex;gap:.35rem;align-items:center}
+  .dot{width:.6rem;height:.6rem;border-radius:50%}.wood{background:#b38a5e}.food{background:#22c55e}.stone{background:#94a3b8}.gold{background:#f59e0b}
+  #game{display:block;width:100%;height:100%}
   #bar{display:flex;gap:.6rem;overflow-x:auto;padding:.6rem .6rem env(safe-area-inset-bottom);
-       background:linear-gradient(180deg, transparent, rgba(0,0,0,.25) 10%, rgba(0,0,0,.5) 55%, rgba(0,0,0,.6) 100%);
-       backdrop-filter:saturate(120%) blur(10px); border-top:1px solid #0b1020; z-index:20}
+    background:linear-gradient(180deg,transparent,rgba(0,0,0,.25) 10%,rgba(0,0,0,.5) 55%,rgba(0,0,0,.6) 100%);border-top:1px solid #0b1020}
   #bar::-webkit-scrollbar{display:none}
-  .btn{flex:0 0 auto; background:var(--panel); border:1px solid #263042; border-radius:16px;
-       padding:.7rem .95rem; min-width:140px; text-align:center; font-weight:800; letter-spacing:.2px;
-       box-shadow:0 4px 0 rgba(0,0,0,.35); user-select:none}
+  .btn{flex:0 0 auto;background:#101a2d;border:1px solid #24324a;border-radius:16px;
+    padding:.7rem .95rem;min-width:140px;text-align:center;font-weight:800;letter-spacing:.2px;box-shadow:0 4px 0 rgba(0,0,0,.35)}
   .btn:active{transform:translateY(1px)}
-  .btn.primary{border-color:#235c3b; background:#0c2d1f}
-  .btn.warn{border-color:#5c1f1f; background:#2a1111}
-  .btn.off{opacity:.55}
-  /* mode & wave pills */
-  .pill{position:fixed; right:.6rem; top:.6rem; background:#1b2333; border:1px solid #2b3550;
-        border-radius:12px; padding:.35rem .6rem; font-weight:800; z-index:25}
-  .pill2{position:fixed; left:.6rem; top:.6rem; background:#2a1531; border:1px solid #3a2243;
-        border-radius:12px; padding:.35rem .6rem; font-weight:800; z-index:25}
-  /* start overlay */
+  .btn.primary{border-color:#235c3b;background:#0c2d1f}
+  .btn.warn{border-color:#5c1f1f;background:#2a1111}
+  .pill{position:fixed;right:.6rem;top:.6rem;background:#1b2333;border:1px solid #2b3550;border-radius:12px;padding:.35rem .6rem;font-weight:800;z-index:25}
+  .pill2{position:fixed;left:.6rem;top:.6rem;background:#2a1531;border:1px solid #3a2243;border-radius:12px;padding:.35rem .6rem;font-weight:800;z-index:25}
+  .hint{position:fixed;left:.6rem;bottom:calc(64px + env(safe-area-inset-bottom));font-size:.82rem;color:#cbd5e1;opacity:.9;z-index:20}
+  /* Start */
   #start{position:fixed;inset:0;background:radial-gradient(60% 50% at 50% 30%, #18233a, #0b1220);
-         display:flex;align-items:center;justify-content:center;z-index:30}
-  .card{width:min(560px,92vw); background:#0e1726; border:1px solid #1e293b; border-radius:20px;
-        padding:1rem .9rem .9rem; box-shadow:0 20px 60px rgba(0,0,0,.5)}
-  h1{margin:.2rem 0 1rem 0; font-size:1.5rem}
+    display:flex;align-items:center;justify-content:center;z-index:30}
+  .card{width:min(560px,92vw);background:#0e1726;border:1px solid #1e293b;border-radius:20px;padding:1rem .9rem .9rem;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  h1{margin:.2rem 0 1rem 0;font-size:1.5rem}
   .row{display:flex;gap:.6rem;flex-wrap:wrap;margin:.35rem 0 .9rem}
   .seg{background:#0b1322;border:1px solid #1e293b;border-radius:999px;padding:.55rem .9rem;font-weight:800}
-  .seg.active{outline:2px solid var(--accent2)}
+  .seg.active{outline:2px solid var(--accent)}
   .startbtn{width:100%;margin-top:.4rem}
-  .hint{position:fixed;left:.6rem;bottom:calc(64px + env(safe-area-inset-bottom));font-size:.82rem;color:#cbd5e1;opacity:.9;z-index:20}
-  /* landscape guard: we still allow, but hint */
-  @media (orientation:landscape){
-    .hint-or{position:fixed;inset:auto .6rem .6rem auto;background:#3b1d1d;border:1px solid #5b2d2d;border-radius:10px;padding:.3rem .5rem; font-size:.8rem;opacity:.85; z-index:25}
-  }
 </style>
 </head>
 <body>
 <div id="wrap">
-  <div id="hud" aria-hidden="true">
-    <div class="chip"><span class="dot wood"></span>Holz: <span id="hudWood">0</span></div>
-    <div class="chip"><span class="dot food"></span>Nahrung: <span id="hudFood">150</span></div>
-    <div class="chip"><span class="dot stone"></span>Stein: <span id="hudStone">0</span></div>
-    <div class="chip"><span class="dot gold"></span>Gold: <span id="hudGold">0</span></div>
-    <div class="chip">👥 <span id="hudPop">3/10</span></div>
-    <div class="chip">🎯 <span id="hudSel">0</span></div>
+  <div id="hud">
+    <div class="chip"><span class="dot wood"></span>Holz: <span id="w">0</span></div>
+    <div class="chip"><span class="dot food"></span>Nahrung: <span id="f">150</span></div>
+    <div class="chip"><span class="dot stone"></span>Stein: <span id="s">0</span></div>
+    <div class="chip"><span class="dot gold"></span>Gold: <span id="g">0</span></div>
+    <div class="chip">👥 <span id="p">3/10</span></div>
+    <div class="chip">🎯 <span id="sel">0</span></div>
   </div>
 
-  <canvas id="game" tabindex="0"></canvas>
+  <canvas id="game"></canvas>
 
   <div class="hint">Tippen: bewegen/auswählen • Ziehen: Mehrfachauswahl • Auf Ressource/Farm: sammeln • Doppeltipp: Stopp</div>
-  <div class="hint-or">Am besten im Hochformat spielen</div>
 
   <div id="bar" role="toolbar" aria-label="Aktionen">
-    <button class="btn primary" id="spawnVillager">👩‍🌾 Villager (50 🍞)</button>
-    <button class="btn" id="trainMilitia">🛡️ Miliz (60 🍞)</button>
-    <button class="btn" id="trainArcher">🏹 Bogenschütze (30 🍞 / 30 🪙)</button>
-    <button class="btn" id="buildHouse">🏠 Haus (30 🌲)</button>
-    <button class="btn" id="buildFarm">🌾 Farm (40 🌲)</button>
-    <button class="btn" id="buildMill">🛖 Mühle (50 🌲)</button>
-    <button class="btn" id="buildBarracks">🏰 Kaserne (60 🌲 / 20 🪨)</button>
-    <button class="btn" id="toggleWaves">Wellen: Ein</button>
-    <button class="btn warn" id="pauseBtn">⏸ Pause</button>
+    <button class="btn primary" id="bVill">👩‍🌾 Villager (50 🍞)</button>
+    <button class="btn" id="bMil">🛡️ Miliz (60 🍞)</button>
+    <button class="btn" id="bArc">🏹 Bogenschütze (30 🍞 / 30 🪙)</button>
+    <button class="btn" id="bHouse">🏠 Haus (30 🌲)</button>
+    <button class="btn" id="bFarm">🌾 Farm (40 🌲)</button>
+    <button class="btn" id="bMill">🛖 Mühle (50 🌲)</button>
+    <button class="btn" id="bBarr">🏰 Kaserne (60 🌲 / 20 🪨)</button>
+    <button class="btn" id="bWave">Wellen: Ein</button>
+    <button class="btn warn" id="bPause">⏸ Pause</button>
   </div>
 </div>
 
-<!-- Start Screen -->
+<!-- Startscreen -->
 <div id="start">
   <div class="card">
     <h1>Spiel starten</h1>
@@ -101,412 +81,301 @@
       <button class="seg active" data-m="wiese">Wiese</button>
       <button class="seg" data-m="wald">Waldreich</button>
       <button class="seg" data-m="berg">Bergland</button>
+      <button class="seg" data-m="insel">Insel</button>
     </div>
-    <button id="startBtn" class="btn primary startbtn">▶ Start</button>
+    <button id="startBtn" class="btn startbtn primary">▶ Start</button>
   </div>
 </div>
 
 <div class="pill2" id="modePill">Modus: Normal</div>
-<div class="pill">Welle: <span id="waveNum">0</span></div>
+<div class="pill">Welle: <span id="waveN">0</span></div>
 
 <script>
-/* ======= Mobile Canvas & Globals ======================================= */
-const cvs = document.getElementById('game');
-const ctx = cvs.getContext('2d', { alpha:false, desynchronized:true });
-const DPR = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
-let W=0,H=0; function resize(){const r=cvs.getBoundingClientRect();W=Math.floor(r.width*DPR);H=Math.floor(r.height*DPR);cvs.width=W;cvs.height=H;ctx.setTransform(DPR,0,0,DPR,0,0);} resize();
-addEventListener('resize', resize);
-document.addEventListener('gesturestart', e=>e.preventDefault());
+/* ============ Canvas & DPR ============ */
+const cvs=document.getElementById('game'); const ctx=cvs.getContext('2d',{alpha:false,desynchronized:true});
+const DPR=Math.max(1,Math.min(3,devicePixelRatio||1)); let CW=0,CH=0;
+function resize(){const r=cvs.getBoundingClientRect(); CW=Math.floor(r.width*DPR); CH=Math.floor(r.height*DPR); cvs.width=CW; cvs.height=CH; ctx.setTransform(DPR,0,0,DPR,0,0);} addEventListener('resize',resize); resize();
 
-/* ======= UI refs ======================================================== */
-const ui = {
-  wood: document.getElementById('hudWood'),
-  food: document.getElementById('hudFood'),
-  stone: document.getElementById('hudStone'),
-  gold: document.getElementById('hudGold'),
-  pop:  document.getElementById('hudPop'),
-  sel:  document.getElementById('hudSel'),
-  wave: document.getElementById('waveNum'),
-  mode: document.getElementById('modePill'),
-  start: document.getElementById('start'),
-  diffRow: document.getElementById('diffRow'),
-  mapRow: document.getElementById('mapRow'),
-  startBtn: document.getElementById('startBtn'),
-  toggleWaves: document.getElementById('toggleWaves'),
-  pauseBtn: document.getElementById('pauseBtn'),
+/* ============ UI refs ============ */
+const UI={w:document.getElementById('w'),f:document.getElementById('f'),s:document.getElementById('s'),g:document.getElementById('g'),p:document.getElementById('p'),sel:document.getElementById('sel'),mode:document.getElementById('modePill'),wave:document.getElementById('waveN'),start:document.getElementById('start')};
+let paused=false, wavesOn=true;
+bWave.onclick=()=>{wavesOn=!wavesOn; bWave.textContent=wavesOn?'Wellen: Ein':'Wellen: Aus';};
+bPause.onclick=()=>{paused=!paused; bPause.textContent=paused?'▶ Weiter':'⏸ Pause';};
+
+/* ============ Assets Loader (mit Fallback) ============ */
+const ASSETS = {
+  tiles_grass:{src:'assets/tiles_grass.png', w:64,h:32},
+  tiles_water:{src:'assets/tiles_water.png', w:64,h:32},
+  tree:{src:'assets/tree.png', w:64,h:64},
+  rock:{src:'assets/rock.png', w:64,h:64},
+  gold:{src:'assets/gold.png', w:64,h:64},
+  tc:{src:'assets/tc.png', w:96,h:96},
+  house:{src:'assets/house.png', w:80,h:80},
+  mill:{src:'assets/mill.png', w:96,h:96},
+  barracks:{src:'assets/barracks.png', w:96,h:96},
+  villager:{src:'assets/villager.png', w:64,h:64, frames:8},
+  militia:{src:'assets/militia.png', w:64,h:64, frames:8},
+  archer:{src:'assets/archer.png', w:64,h:64, frames:8}
 };
-let paused=false, wavesEnabled=true;
-
-/* ======= Game State ===================================================== */
-const res = { wood:0, food:150, stone:0, gold:0, cap:10, wave:0 };
-const map = { kind:'wiese', size:1600 }; // logical pixels; camera follows
-const cam = { x:0, y:0 };                 // top-left of camera in world space
-const TILE = 64;
-
-const trees=[], rocks=[], golds=[], berries=[];
-const buildings=[];
-const friendly=[];
-const enemy=[];
-const selected = new Set();
-
-function updateHUD(){
-  ui.wood.textContent = res.wood;
-  ui.food.textContent = res.food;
-  ui.stone.textContent = res.stone;
-  ui.gold.textContent = res.gold;
-  ui.pop.textContent  = friendly.length + '/' + res.cap;
-  ui.sel.textContent  = selected.size;
-  ui.wave.textContent = res.wave;
+const IMG={}; // loaded images or null
+async function loadImages(){
+  const jobs=Object.entries(ASSETS).map(([k,meta])=> new Promise(res=>{
+    const img=new Image(); img.onload=()=>{IMG[k]=img; res();}; img.onerror=()=>{IMG[k]=null; res();}; img.src=meta.src;
+  }));
+  await Promise.all(jobs);
 }
+loadImages(); // fire and forget; Code fällt auf Shapes zurück, wenn null
 
-/* ======= Start Screen selections ======================================= */
-let difficulty = 'leicht';
-ui.diffRow.addEventListener('click', (e)=>{
-  const b=e.target.closest('.seg'); if(!b) return;
-  for(const x of ui.diffRow.querySelectorAll('.seg')) x.classList.remove('active');
-  b.classList.add('active'); difficulty=b.dataset.d;
-});
-ui.mapRow.addEventListener('click', (e)=>{
-  const b=e.target.closest('.seg'); if(!b) return;
-  for(const x of ui.mapRow.querySelectorAll('.seg')) x.classList.remove('active');
-  b.classList.add('active'); map.kind=b.dataset.m;
-});
+/* ============ Game State ============ */
+const res={wood:0,food:150,stone:0,gold:0,cap:10,wave:0};
+const cam={x:0,y:0}; const map={kind:'wiese',w:64,h:64,tile:48};
+const T=map.tile; const H=T/2; const V=H/2;
+const terrain=[], trees=[], rocks=[], golds=[], berries=[], buildings=[], friendly=[], enemy=[];
+const selected=new Set();
+function updHUD(){UI.w.textContent=res.wood;UI.f.textContent=res.food;UI.s.textContent=res.stone;UI.g.textContent=res.gold;UI.p.textContent=friendly.length+'/'+res.cap;UI.sel.textContent=selected.size;UI.wave.textContent=res.wave;}
 
-/* ======= Difficulty timings ============================================ */
-const DIFFS = {
-  frieden: { first:1e9, every:1e9, waveSize:(w)=>0 },
-  leicht:  { first:240, every:160, waveSize:(w)=> 1 + w },      // gut zum Aufbauen
-  mittel:  { first:140, every:120, waveSize:(w)=> 2 + Math.floor(w*1.5) },
-  schwer:  { first: 90, every: 90, waveSize:(w)=> 3 + w*2 }
-};
-let waveTimer = 0;
+/* ============ Difficulty & Waves ============ */
+const DIFF={frieden:{first:1e9,every:1e9,n:w=>0},leicht:{first:220,every:150,n:w=>1+w},mittel:{first:140,every:115,n:w=>2+Math.floor(w*1.5)},schwer:{first:90,every:90,n:w=>3+w*2}};
+let diff='leicht', waveTimer=0;
 
-/* ======= Map scatter ==================================================== */
-function scatter(list, n, radius, ypad=150){
-  const pad=80;
-  for(let i=0;i<n;i++){
-    const x = Math.random()*(map.size-pad*2)+pad;
-    const y = Math.random()*(map.size-pad*2-ypad)+pad+ypad;
-    list.push({x,y,hp:radius*3,max:radius*3,r:radius});
-  }
-}
-
-/* ======= Entities ======================================================= */
-function addBuilding(type,x,y){
-  const s = { house:18, farm:20, mill:24, barracks:30, tc:34 }[type];
-  const hp= { house:240, farm:240, mill:300, barracks:420, tc:600 }[type];
-  const drop = (type==='mill' || type==='tc');
-  buildings.push({type,x,y,w:s*2,h:s*2,hp,max:hp,dropoff:drop});
-}
-function villager(x,y){return{team:1,type:'villager',x,y,r:12,tx:x,ty:y,speed:110,task:null,target:null,_t:0,hp:60,max:60,atk:4,range:16,rate:1,last:0,carry:{type:null,amt:0,cap:10},remember:null}}
-function militia(x,y){return{team:1,type:'militia', x,y,r:13,tx:x,ty:y,speed:130,task:null,target:null,_t:0,hp:90,max:90,atk:10,range:16,rate:.75,last:0}}
-function archer (x,y){return{team:1,type:'archer',  x,y,r:12,tx:x,ty:y,speed:120,task:null,target:null,_t:0,hp:70,max:70,atk:8, range:85,rate:.8,last:0}}
-function raider (x,y){return{team:2,type:'raider',  x,y,r:13,tx:x,ty:y,speed:115,task:'raid',target:null,_t:0,hp:65,max:65,atk:8, range:16,rate:.9,last:0}}
-
-/* ======= Helpers ======================================================== */
+/* ============ Helpers ============ */
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-function nearestDropoff(obj){let best=null,bd=1e9;for(const b of buildings){if(b.dropoff){const d=dist(b,obj);if(d<bd){bd=d;best=b}}}return best;}
-function nearestInSight(u,list,sight){let best=null,bd=1e9;for(const t of list){ if(t.hp>0){const d=dist(u,t); if(d<bd && d<=sight){ bd=d; best=t; }}}return best;}
-function findNearestTarget(u,list){let best=null,bd=1e9;for(const t of list){ if(t.hp>0){const d=dist(u,t); if(d<bd){ bd=d; best=t; }}}return best;}
-function damage(obj,amt){ obj.hp = clamp(obj.hp-amt,0,obj.max); }
+function worldToScreen(x,y){const sx=(x-y)*H - cam.x, sy=(x+y)*V - cam.y; return {x:sx+CW/DPR/2,y:sy+110};}
+function screenToWorld(sx,sy){sx-=CW/DPR/2; sy-=110; const i=((sx/H)+(sy/V))/2; const j=((sy/V)-(sx/H))/2; return {x:Math.floor(i),y:Math.floor(j)};}
+const rnd=(a,b)=>Math.random()*(b-a)+a; const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+function nearestDrop(o){let best=null,bd=1e9; for(const b of buildings){ if(b.dropoff){const d=dist(o,b); if(d<bd){bd=d;best=b;}} } return best;}
+function nearest(list,o,max=9999){let best=null,bd=max; for(const t of list){ if(t.hp>0){ const d=dist(o,t); if(d<bd){bd=d;best=t;} } } return best;}
+function damage(o,a){o.hp=clamp(o.hp-a,0,o.max);}
 
-/* ======= Input (touch) ================================================== */
-function worldPos(clientX,clientY){ const r=cvs.getBoundingClientRect(); const x=(clientX-r.left)+cam.x; const y=(clientY-r.top)+cam.y; return {x,y}; }
-function screenToWorld(p){return {x:p.x+cam.x, y:p.y+cam.y};}
-function pickUnit(list,x,y){return list.find(u=>Math.hypot(u.x-x,u.y-y)<u.r+10);}
-function pick(list,x,y,rad){return list.find(o=>Math.hypot(o.x-x,o.y-y)<rad && (o.hp==null || o.hp>0));}
+/* ============ Entities ============ */
+function addBuilding(type,x,y){
+  const hp={tc:600,house:220,farm:220,mill:320,barracks:420}[type];
+  const drop=(type==='tc'||type==='mill'); buildings.push({type,x,y,hp,max:hp,dropoff:drop});
+}
+function villager(x,y){return{team:1,type:'villager',x,y,tx:x,ty:y,speed:3.0,task:null,target:null,_t:0,hp:60,max:60,atk:4,range:1.1,rate:1,last:0,carry:{type:null,amt:0,cap:10},remember:null,frame:0}}
+function militia(x,y){return{team:1,type:'militia', x,y,tx:x,ty:y,speed:3.2,task:null,target:null,_t:0,hp:90,max:90,atk:10,range:1.1,rate:.7,last:0,frame:0}}
+function archer (x,y){return{team:1,type:'archer',  x,y,tx:x,ty:y,speed:3.0,task:null,target:null,_t:0,hp:70,max:70,atk:7, range:4.5,rate:.8,last:0,frame:0}}
+function raider (x,y){return{team:2,type:'raider',  x,y,tx:x,ty:y,speed:2.8,task:'raid',target:null,_t:0,hp:65,max:65,atk:8, range:1.1,rate:.9,last:0,frame:0}}
+function canPlaceGrid(x,y){
+  for(const b of buildings){ if(Math.hypot(b.x-x,b.y-y)<3) return false; }
+  for(const t of trees){ if(Math.hypot(t.x-x,t.y-y)<2) return false; }
+  for(const r of rocks){ if(Math.hypot(r.x-x,r.y-y)<2) return false; }
+  for(const g of golds){ if(Math.hypot(g.x-x,g.y-y)<2) return false; }
+  return terrain[x+y*map.w]!==2;
+}
 
-let dragging=false, dragStart=null, pointer=null, lastTap=0;
-cvs.addEventListener('pointerdown', e=>{
-  if(paused) return;
-  pointer = {id:e.pointerId}; const p=worldPos(e.clientX,e.clientY);
-  const now=performance.now(); const dbl = (now-lastTap)<250; lastTap=now;
+/* ============ Start UI ============ */
+diffRow.addEventListener('click',e=>{const b=e.target.closest('.seg');if(!b)return;[...diffRow.children].forEach(x=>x.classList.remove('active'));b.classList.add('active');diff=b.dataset.d;});
+mapRow.addEventListener('click',e=>{const b=e.target.closest('.seg');if(!b)return;[...mapRow.children].forEach(x=>x.classList.remove('active'));b.classList.add('active');map.kind=b.dataset.m;});
+startBtn.onclick=init;
 
-  // click unit to select
-  const hit = pickUnit(friendly, p.x, p.y);
-  if(hit && !dbl && !buildMode){ selected.clear(); selected.add(hit); updateHUD(); dragStart={sx:e.clientX,sy:e.clientY,wx:p.x,wy:p.y}; return; }
+function init(){
+  UI.start.style.display='none';
+  terrain.length=map.w*map.h;
+  for(let y=0;y<map.h;y++){
+    for(let x=0;x<map.w;x++){
+      let t=0;
+      if(map.kind==='insel'){const dx=x-map.w/2,dy=y-map.h/2,d=Math.hypot(dx,dy); if(d>map.w*0.34) t=2;}
+      if(map.kind==='berg'&&Math.random()<0.10) t=3;
+      if(Math.random()<0.03) t=2;
+      terrain[x+y*map.w]=t;
+    }
+  }
+  for(let y=30;y<34;y++)for(let x=30;x<34;x++)terrain[x+y*map.w]=1;
 
-  // build?
+  function scatter(list,n,rad){for(let i=0;i<n;i++){const x=Math.floor(rnd(4,map.w-4)), y=Math.floor(rnd(8,map.h-4)); if(terrain[x+y*map.w]!==2){list.push({x,y,hp:rad*3,max:rad*3});}}}
+  const mul=map.kind==='wald'?1.6: map.kind==='berg'?0.6:1;
+  scatter(trees, Math.floor(90*mul),18);
+  scatter(rocks, Math.floor(28*(map.kind==='berg'?1.6:1)),18);
+  scatter(golds, Math.floor(22*(map.kind==='berg'?1.4:1)),18);
+  scatter(berries,16,16);
+
+  addBuilding('tc',32,32);
+  friendly.push(villager(33,32), villager(31,32), villager(32,33));
+  selected.clear(); friendly.forEach(u=>selected.add(u)); updHUD();
+
+  const s=worldToScreen(32,32); cam.x=( (32-32)*H ) - (CW/DPR/2 - s.x); cam.y=( (32+32)*V ) - (CH/DPR/2 - s.y) + 110;
+}
+
+/* ============ Buttons ============ */
+bVill.onclick =()=>{if(!buildings.some(b=>b.type==='tc'))return; if(res.food>=50 && friendly.length<res.cap){res.food-=50; friendly.push(villager(32,32)); updHUD();}};
+bMil.onclick  =()=>{if(!buildings.some(b=>b.type==='barracks'))return; if(res.food>=60 && friendly.length<res.cap){res.food-=60; friendly.push(militia(32,32)); updHUD();}};
+bArc.onclick  =()=>{if(!buildings.some(b=>b.type==='barracks'))return; if(res.food>=30&&res.gold>=30 && friendly.length<res.cap){res.food-=30; res.gold-=30; friendly.push(archer(32,32)); updHUD();}};
+bHouse.onclick=()=>setBuild('house'); bFarm.onclick=()=>setBuild('farm'); bMill.onclick=()=>setBuild('mill'); bBarr.onclick=()=>setBuild('barracks');
+let buildMode=null; function setBuild(m){buildMode=m; UI.mode.textContent='Modus: '+(m?('Bauen – '+m):'Normal');}
+
+/* ============ Input ============ */
+let dragging=false, dragStart=null, lastTap=0, mx=0,my=0;
+cvs.addEventListener('pointerdown',e=>{
+  if(paused||UI.start.style.display!=='none')return;
+  mx=e.clientX; my=e.clientY;
+  const now=performance.now(); const dbl=now-lastTap<250; lastTap=now;
+
+  const {x:gx,y:gy}=screenToWorld(e.clientX,e.clientY);
+  const hit=friendly.find(u=>Math.hypot(u.x-gx,u.y-gy)<1.3);
+  if(hit && !dbl && !buildMode){ selected.clear(); selected.add(hit); updHUD(); dragStart={x:e.clientX,y:e.clientY}; return; }
+
   if(buildMode){
-    const okPlace = canPlace(p.x,p.y);
-    if(okPlace){
-      if(buildMode==='house' && res.wood>=30){res.wood-=30;addBuilding('house',p.x,p.y);res.cap+=3;setBuild(null);}
-      else if(buildMode==='farm' && res.wood>=40){res.wood-=40;addBuilding('farm',p.x,p.y);setBuild(null);}
-      else if(buildMode==='mill' && res.wood>=50){res.wood-=50;addBuilding('mill',p.x,p.y);setBuild(null);}
-      else if(buildMode==='barracks' && res.wood>=60 && res.stone>=20){res.wood-=60;res.stone-=20;addBuilding('barracks',p.x,p.y);setBuild(null);}
-      updateHUD();
+    if(canPlaceGrid(gx,gy)){
+      if(buildMode==='house'&&res.wood>=30){res.wood-=30; addBuilding('house',gx,gy); res.cap+=3; setBuild(null);}
+      else if(buildMode==='farm'&&res.wood>=40){res.wood-=40; addBuilding('farm',gx,gy); setBuild(null);}
+      else if(buildMode==='mill'&&res.wood>=50){res.wood-=50; addBuilding('mill',gx,gy); setBuild(null);}
+      else if(buildMode==='barracks'&&res.wood>=60&&res.stone>=20){res.wood-=60; res.stone-=20; addBuilding('barracks',gx,gy); setBuild(null);}
+      updHUD();
     }
     return;
   }
 
-  if(dbl){ for(const u of selected){ u.task=null; u.target=null; u.tx=u.x; u.ty=u.y; u.remember=null; } return; }
+  if(dbl){ for(const u of selected){u.task=null;u.target=null;u.tx=u.x;u.ty=u.y;u.remember=null;} return; }
 
-  // resource / farm?
-  const tTree=pick(trees,p.x,p.y,20), tRock=pick(rocks,p.x,p.y,20), tGold=pick(golds,p.x,p.y,20), tBerry=pick(berries,p.x,p.y,18);
-  const fFarm=buildings.find(b=>b.type==='farm' && Math.hypot(b.x-p.x,b.y-p.y)<26);
-  const foe  =pickUnit(enemy,p.x,p.y);
-
-  if(tTree||tRock||tGold||tBerry||fFarm){
+  const pickup=(arr,r)=>nearest(arr,{x:gx,y:gy},r);
+  const tTree=pickup(trees,2), tRock=pickup(rocks,2), tGold=pickup(golds,2), tBerry=pickup(berries,2);
+  const onFarm=buildings.find(b=>b.type==='farm'&&Math.hypot(b.x-gx,b.y-gy)<2.2);
+  if(tTree||tRock||tGold||tBerry||onFarm){
     for(const u of selected){ if(u.type!=='villager') continue;
-      const tgt=tTree||tRock||tGold||tBerry||fFarm;
+      const tgt=tTree||tRock||tGold||tBerry||onFarm;
       const kind=tTree?'wood':tRock?'stone':tGold?'gold':tBerry?'food-node':'farm';
       setTask(u,kind,tgt); u.remember={kind,target:tgt};
     } return;
   }
-  if(foe){ for(const u of selected){ u.task='attack'; u.target=foe; u.tx=foe.x; u.ty=foe.y; } return; }
 
-  // move formation
-  let i=0;
-  for(const u of selected){
-    const offx=((i%3)-1)*12, offy=(Math.floor(i/3)-1)*12; i++;
-    u.task='move'; u.target=null; u.tx=p.x+offx; u.ty=p.y+offy; u.remember=null;
-  }
-  dragStart={sx:e.clientX,sy:e.clientY,wx:p.x,wy:p.y}; dragging=false;
+  const foe=nearest(enemy,{x:gx,y:gy},1.5);
+  if(foe){ for(const u of selected){u.task='attack'; u.target=foe; u.tx=foe.x; u.ty=foe.y;} return; }
+
+  let i=0; for(const u of selected){ const off=[[-.6,0],[.6,0],[0,.6],[0,-.6]][i%4]||[0,0]; i++; u.task='move'; u.tx=gx+off[0]; u.ty=gy+off[1]; u.remember=null; }
+  dragStart={x:e.clientX,y:e.clientY}; dragging=false;
 });
-cvs.addEventListener('pointermove', e=>{
-  if(!dragStart) return;
-  const dx=e.clientX-dragStart.sx, dy=e.clientY-dragStart.sy;
-  dragging = Math.hypot(dx,dy)>14;
-});
-cvs.addEventListener('pointerup', e=>{
-  if(dragging && dragStart){
-    // rectangle select in screen space
-    const r=cvs.getBoundingClientRect();
-    const x1=Math.min(dragStart.sx,e.clientX)-r.left, y1=Math.min(dragStart.sy,e.clientY)-r.top;
-    const x2=Math.max(dragStart.sx,e.clientX)-r.left, y2=Math.max(dragStart.sy,e.clientY)-r.top;
-    const wsel={x:x1+cam.x,y:y1+cam.y,w:x2-x1,h:y2-y1};
-    selected.clear();
-    for(const u of friendly){ if(u.x>=wsel.x && u.x<=wsel.x+wsel.w && u.y>=wsel.y && u.y<=wsel.y+wsel.h) selected.add(u); }
-    updateHUD();
+cvs.addEventListener('pointermove',e=>{mx=e.clientX; my=e.clientY; if(!dragStart)return; const dx=e.clientX-dragStart.x,dy=e.clientY-dragStart.y; dragging=Math.hypot(dx,dy)>14;});
+cvs.addEventListener('pointerup',e=>{
+  if(dragging&&dragStart){
+    const a=screenToWorld(dragStart.x,dragStart.y), b=screenToWorld(e.clientX,e.clientY);
+    const minx=Math.min(a.x,b.x), maxx=Math.max(a.x,b.x), miny=Math.min(a.y,b.y), maxy=Math.max(a.y,b.y);
+    selected.clear(); for(const u of friendly){ if(u.x>=minx&&u.x<=maxx&&u.y>=miny&&u.y<=maxy) selected.add(u); }
+    updHUD();
   }
   dragStart=null; dragging=false;
 });
-function setTask(u,kind,target){ u.task=kind; u.target=target; u.tx=target.x; u.ty=target.y; u._t=0; }
+function setTask(u,kind,target){u.task=kind; u.target=target; u.tx=target.x; u.ty=target.y; u._t=0;}
 
-/* ======= Build mode buttons ============================================ */
-let buildMode=null; function setBuild(m){buildMode=m; ui.mode.textContent='Modus: '+(m?('Bauen – '+m):'Normal');}
-spawnVillager.onclick=()=>{ if(!buildings.some(b=>b.type==='tc'))return; if(res.food>=50 && friendly.length<res.cap){res.food-=50; friendly.push(villager(map.size/2+Math.random()*50-25, map.size/2+Math.random()*40-20)); updateHUD();}};
-trainMilitia.onclick =()=>{ if(!buildings.some(b=>b.type==='barracks'))return; if(res.food>=60 && friendly.length<res.cap){res.food-=60; friendly.push(militia(map.size/2, map.size/2)); updateHUD();}};
-trainArcher.onclick  =()=>{ if(!buildings.some(b=>b.type==='barracks'))return; if(res.food>=30 && res.gold>=30 && friendly.length<res.cap){res.food-=30; res.gold-=30; friendly.push(archer(map.size/2, map.size/2)); updateHUD();}};
-buildHouse.onclick   =()=> setBuild('house');
-buildFarm.onclick    =()=> setBuild('farm');
-buildMill.onclick    =()=> setBuild('mill');
-buildBarracks.onclick=()=> setBuild('barracks');
-ui.pauseBtn.onclick  =()=>{ paused=!paused; ui.pauseBtn.textContent = paused? '▶ Weiter':'⏸ Pause'; };
-ui.toggleWaves.onclick=()=>{ wavesEnabled=!wavesEnabled; ui.toggleWaves.textContent = wavesEnabled?'Wellen: Ein':'Wellen: Aus'; };
-
-/* ======= Start game ===================================================== */
-ui.startBtn.onclick = ()=>{
-  ui.start.style.display='none';
-  // map flavor
-  const flavor = map.kind;
-  const base =  map.size;
-  trees.length=rocks.length=golds.length=berries.length=0;
-  if(flavor==='wiese'){ scatter(trees, 38, 18); scatter(rocks,12,18); scatter(golds,10,18); scatter(berries,10,16); }
-  if(flavor==='wald'){  scatter(trees, 70, 18); scatter(rocks,10,18); scatter(golds,8,18);  scatter(berries,8,16); }
-  if(flavor==='berg'){  scatter(trees, 22, 18); scatter(rocks,24,18); scatter(golds,14,18); scatter(berries,6,16); }
-
-  // Town center & units
-  addBuilding('tc', base/2, base/2);
-  friendly.push(villager(base/2+22, base/2-10));
-  friendly.push(villager(base/2-24, base/2-6));
-  friendly.push(villager(base/2,    base/2+24));
-  selected.clear(); friendly.forEach(u=>selected.add(u)); updateHUD();
-
-  // camera center
-  cam.x = base/2 - (cvs.clientWidth/2); cam.y = base/2 - (cvs.clientHeight/2);
-  cam.x = clamp(cam.x,0, base-cvs.clientWidth); cam.y = clamp(cam.y,0, base-cvs.clientHeight);
-
-  // difficulty reset
-  waveTimer=0; res.wave=0; updateHUD();
-};
-
-/* ======= Logic ========================================================== */
-function stepUnits(list, dt, isFriendly){
+/* ============ Logic ============ */
+function stepUnits(list,dt,isFriendly){
   for(const u of list){
-    // auto target for enemies
-    if(!isFriendly && (!u.target || u.target.hp<=0)){
-      u.target = findNearestTarget(u, [...buildings, ...friendly]);
-      if(u.target){ u.tx=u.target.x; u.ty=u.target.y; }
-    }
-    if(isFriendly && u.task==='attack' && u.target && u.target.hp<=0){ u.task=null; }
+    if(!isFriendly && (!u.target||u.target.hp<=0)){ u.target=nearest([...buildings,...friendly],u); if(u.target){u.tx=u.target.x; u.ty=u.target.y;} }
+    if(isFriendly && u.task==='attack' && u.target && u.target.hp<=0) u.task=null;
 
-    // move
-    const dx=u.tx-u.x, dy=u.ty-u.y; const d=Math.hypot(dx,dy);
-    if(d>1){ const s=u.speed*dt; u.x += (dx/d)*Math.min(s,d); u.y += (dy/d)*Math.min(s,d); }
+    const dx=u.tx-u.x, dy=u.ty-u.y, d=Math.hypot(dx,dy);
+    if(d>0.05){ const s=u.speed*dt; u.x += (dx/d)*Math.min(s,d); u.y += (dy/d)*Math.min(s,d); u.frame=(u.frame+dt*10)% (ASSETS[u.type]?.frames||1); }
 
-    // villagers gather
     if(u.type==='villager'){
-      if(u.task && d<=14){
-        u._t += dt;
-        if(u._t>=0.5){
-          u._t=0;
-          if(u.task==='wood' && u.target?.hp>0){ u.target.hp-=2; u.carry.type='wood'; u.carry.amt+=2; }
-          else if(u.task==='stone' && u.target?.hp>0){ u.target.hp-=2; u.carry.type='stone'; u.carry.amt+=2; }
-          else if(u.task==='gold' && u.target?.hp>0){ u.target.hp-=2; u.carry.type='gold'; u.carry.amt+=2; }
-          else if(u.task==='food-node' && u.target?.hp>0){ u.target.hp-=2; u.carry.type='food'; u.carry.amt+=2; }
-          else if(u.task==='farm'){ u.carry.type='food'; u.carry.amt+=3; }
-          if(u.carry.amt >= u.carry.cap){ const dpo=nearestDropoff(u); if(dpo){u.task='return'; u.target=dpo; u.tx=dpo.x; u.ty=dpo.y;} }
+      if(u.task && d<=0.9){
+        u._t+=dt; if(u._t>=0.5){u._t=0;
+          if(u.task==='wood'&&u.target?.hp>0){u.target.hp-=2;u.carry.type='wood';u.carry.amt+=2;}
+          else if(u.task==='stone'&&u.target?.hp>0){u.target.hp-=2;u.carry.type='stone';u.carry.amt+=2;}
+          else if(u.task==='gold'&&u.target?.hp>0){u.target.hp-=2;u.carry.type='gold';u.carry.amt+=2;}
+          else if(u.task==='food-node'&&u.target?.hp>0){u.target.hp-=2;u.carry.type='food';u.carry.amt+=2;}
+          else if(u.task==='farm'){u.carry.type='food';u.carry.amt+=3;}
+          if(u.carry.amt>=u.carry.cap){const dpo=nearestDrop(u); if(dpo){u.task='return';u.target=dpo;u.tx=dpo.x;u.ty=dpo.y;}}
         }
       }
-      if(u.task==='return' && d<=18){
-        if(u.carry.type){ res[u.carry.type]+=u.carry.amt; u.carry.amt=0; updateHUD(); }
-        if(u.remember && u.remember.target?.hp>0){ setTask(u,u.remember.kind,u.remember.target); } else { u.task=null; }
+      if(u.task==='return' && d<=1.1){
+        if(u.carry.type){res[u.carry.type]+=u.carry.amt; u.carry.amt=0; updHUD();}
+        if(u.remember && u.remember.target?.hp>0){setTask(u,u.remember.kind,u.remember.target);} else u.task=null;
       }
     }
 
-    // combat
-    const foes = isFriendly ? enemy : friendly;
-    const tgt = (u.task==='attack' && u.target) ? u.target : nearestInSight(u,foes,u.type==='archer' ? 110 : 140);
+    const foes=isFriendly?enemy:friendly;
+    const tgt=(u.task==='attack'&&u.target)?u.target:nearest(foes,u,u.type==='archer'?4.8:3.8);
     if(tgt){
-      if(dist(u,tgt)<=u.range+2){
-        u.last += dt; if(u.last>=u.rate){ u.last=0; damage(tgt,u.atk); }
-      }else{
-        const ang=Math.atan2(tgt.y-u.y,tgt.x-u.x); const keep=(u.type==='archer'? u.range-6 : u.range-2);
-        u.tx = tgt.x - Math.cos(ang)*keep; u.ty = tgt.y - Math.sin(ang)*keep;
-      }
+      const dd=dist(u,tgt);
+      if(dd<=u.range){ u.last+=dt; if(u.last>=u.rate){u.last=0; damage(tgt,u.atk);} }
+      else { const ang=Math.atan2(tgt.y-u.y,tgt.x-u.x); const keep=(u.type==='archer'?u.range-0.2:u.range-0.1); u.tx=tgt.x-Math.cos(ang)*keep; u.ty=tgt.y-Math.sin(ang)*keep; }
     }
   }
 }
-function farmsPassive(dt){
-  for(const b of buildings) if(b.type==='farm'){ b._t=(b._t||0)+dt; if(b._t>2){b._t=0; res.food+=1; updateHUD(); } }
-}
-function cleanDead(){
-  for(let i=friendly.length-1;i>=0;i--) if(friendly[i].hp<=0){ friendly.splice(i,1); updateHUD(); }
-  for(let i=enemy.length-1;i>=0;i--) if(enemy[i].hp<=0) enemy.splice(i,1);
-  for(let i=buildings.length-1;i>=0;i--) if(buildings[i].hp<=0) buildings.splice(i,1);
-}
+function farmsPassive(dt){ for(const b of buildings){ if(b.type==='farm'){ b._t=(b._t||0)+dt; if(b._t>2){b._t=0; res.food+=1; updHUD();} } } }
+function cleanDead(){ for(let i=friendly.length-1;i>=0;i--) if(friendly[i].hp<=0){friendly.splice(i,1);updHUD();} for(let i=enemy.length-1;i>=0;i--) if(enemy[i].hp<=0) enemy.splice(i,1); for(let i=buildings.length-1;i>=0;i--) if(buildings[i].hp<=0) buildings.splice(i,1); }
 
-/* ======= Waves ========================================================== */
+/* ============ Waves ============ */
 function spawnWave(){
-  const conf = DIFFS[difficulty];
-  const n = Math.max(0, Math.floor(conf.waveSize(res.wave)));
-  if(n<=0) return;
+  const c=DIFF[diff]; const n=Math.max(0,Math.floor(c.n(res.wave))); if(n<=0) return;
   res.wave++;
   for(let i=0;i<n;i++){
-    const edge = Math.floor(Math.random()*4);
-    let x,y; const m=map.size;
-    if(edge===0){ x=-20;    y=Math.random()*(m-120)+60; }
-    if(edge===1){ x=m+20;   y=Math.random()*(m-120)+60; }
-    if(edge===2){ x=Math.random()*(m-120)+60; y=-20; }
-    if(edge===3){ x=Math.random()*(m-120)+60; y=m+20; }
+    const edge=Math.floor(Math.random()*4); let x,y;
+    if(edge===0){x=2;y=Math.floor(rnd(2,map.h-2));}
+    if(edge===1){x=map.w-2;y=Math.floor(rnd(2,map.h-2));}
+    if(edge===2){x=Math.floor(rnd(2,map.w-2));y=2;}
+    if(edge===3){x=Math.floor(rnd(2,map.w-2));y=map.h-2;}
     enemy.push(raider(x,y));
-  }
-  updateHUD();
+  } updHUD();
 }
 
-/* ======= Draw =========================================================== */
-function drawGrass(){
-  // tile-based simple grass with variation per map.kind
-  const g = { wiese:['#174422','#0e3319'], wald:['#103a20','#0a2b15'], berg:['#233624','#1b2a1c'] }[map.kind];
-  ctx.fillStyle=g[1]; ctx.fillRect(0,0,cvs.width,cvs.height);
-  const size=64;
-  for(let y= -((cam.y%size)+size); y<cvs.height+size; y+=size){
-    for(let x= -((cam.x%size)+size); x<cvs.width+size; x+=size){
-      ctx.fillStyle=g[0];
-      ctx.fillRect(x,y, size, size);
-      ctx.globalAlpha=.08; ctx.fillStyle='#fff';
-      ctx.fillRect(x+12,y+10,2,2); ctx.fillRect(x+28,y+26,2,2); ctx.fillRect(x+46,y+18,2,2);
-      ctx.globalAlpha=1;
+/* ============ Rendering (Tiles, Sprites, Fallback) ============ */
+function drawTileIso(x,y,t){
+  const s=worldToScreen(x,y);
+  const img = (t===2 && IMG.tiles_water) ? IMG.tiles_water : IMG.tiles_grass;
+  if(img){
+    ctx.drawImage(img, 0,0, ASSETS.tiles_grass.w,ASSETS.tiles_grass.h, s.x-ASSETS.tiles_grass.w/2, s.y-ASSETS.tiles_grass.h/2, ASSETS.tiles_grass.w, ASSETS.tiles_grass.h);
+  }else{
+    // Fallback: diamond
+    ctx.fillStyle= t===2 ? '#216d9b' : t===3 ? '#2e2e2e' : t===1 ? '#6b4f2c' : '#225233';
+    ctx.beginPath(); ctx.moveTo(s.x, s.y - H/2); ctx.lineTo(s.x + H/2, s.y); ctx.lineTo(s.x, s.y + H/2); ctx.lineTo(s.x - H/2, s.y); ctx.closePath(); ctx.fill();
+  }
+}
+function drawBillboard(imgMetaKey, x, y, frame=0){
+  const img = IMG[imgMetaKey]; const meta=ASSETS[imgMetaKey]; const s=worldToScreen(x,y);
+  if(img){
+    const fw=meta.w, fh=meta.h, fcount=meta.frames||1, fx=(Math.floor(frame)%fcount)*fw;
+    ctx.drawImage(img, fx,0, fw,fh, s.x-fw/2, s.y-fh+16, fw,fh);
+  }else{
+    // Fallbacks
+    if(imgMetaKey==='tree'||imgMetaKey==='rock'||imgMetaKey==='gold'){
+      ctx.fillStyle= imgMetaKey==='tree' ? '#2ecc71' : imgMetaKey==='gold' ? '#fbbf24' : '#94a3b8';
+      ctx.beginPath(); ctx.arc(s.x, s.y-10, 14, 0, Math.PI*2); ctx.fill();
+    }else{
+      ctx.fillStyle='#60a5fa'; ctx.beginPath(); ctx.arc(s.x, s.y-6, 10, 0, Math.PI*2); ctx.fill();
     }
   }
 }
-function draw(){
-  drawGrass();
-
-  // selection rectangle UI
-  if(dragging && dragStart){
-    const r=cvs.getBoundingClientRect();
-    const x= Math.min(dragStart.sx, pointer?.sx||dragStart.sx)-r.left;
-    const y= Math.min(dragStart.sy, pointer?.sy||dragStart.sy)-r.top;
-    const w= Math.abs((pointer?.sx||dragStart.sx)-dragStart.sx);
-    const h= Math.abs((pointer?.sy||dragStart.sy)-dragStart.sy);
-    ctx.fillStyle='rgba(59,130,246,.15)'; ctx.strokeStyle='rgba(59,130,246,.9)'; ctx.setLineDash([6,4]);
-    ctx.fillRect(x,y,w,h); ctx.strokeRect(x,y,w,h); ctx.setLineDash([]);
-  }
-
-  const toScreen = (o)=>({x:o.x-cam.x, y:o.y-cam.y});
-
-  // resources
-  const drawBlob=(x,y,r,fill,stroke)=>{ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=stroke;ctx.stroke();};
-  for(const t of trees){ if(t.hp>0){ const s=toScreen(t); drawBlob(s.x,s.y,18,'#2ecc71','#14532d'); ctx.fillStyle='#8e5a2c'; ctx.fillRect(s.x-2,s.y+12,4,10);} }
-  for(const s of rocks){ if(s.hp>0){ const p=toScreen(s); drawBlob(p.x,p.y,18,'#94a3b8','#334155'); } }
-  for(const g of golds){ if(g.hp>0){ const p=toScreen(g); drawBlob(p.x,p.y,18,'#fbbf24','#92400e'); } }
-  for(const b of berries){ if(b.hp>0){ const p=toScreen(b); drawBlob(p.x,p.y,16,'#b91c1c','#7f1d1d'); } }
-
-  // buildings
-  for(const b of buildings){
-    const s=toScreen(b);
-    if(b.type==='house'){
-      ctx.fillStyle='#9ca3af'; ctx.fillRect(s.x-18,s.y-18,36,36);
-      ctx.fillStyle='#b91c1c'; ctx.beginPath(); ctx.moveTo(s.x-22,s.y-18); ctx.lineTo(s.x+22,s.y-18); ctx.lineTo(s.x,s.y-36); ctx.closePath(); ctx.fill();
-      ctx.fillStyle='#1f2937'; ctx.fillRect(s.x-6,s.y+2,12,14);
-    }else if(b.type==='farm'){
-      ctx.fillStyle='#166534'; ctx.fillRect(s.x-20,s.y-20,40,40);
-      ctx.fillStyle='rgba(255,255,255,.15)'; for(let i=-16;i<=16;i+=8) ctx.fillRect(s.x-20,s.y+i,40,2);
-      ctx.strokeStyle='#34d399'; ctx.strokeRect(s.x-20,s.y-20,40,40);
-    }else if(b.type==='mill'){
-      ctx.fillStyle='#8b5cf6'; ctx.fillRect(s.x-24,s.y-24,48,48);
-      ctx.fillStyle='#e5e7eb';
-      ctx.beginPath(); ctx.moveTo(s.x,s.y-26); ctx.lineTo(s.x+7,s.y-7); ctx.lineTo(s.x-7,s.y-7); ctx.closePath(); ctx.fill();
-      ctx.beginPath(); ctx.moveTo(s.x+26,s.y); ctx.lineTo(s.x+7,s.y+7); ctx.lineTo(s.x+7,s.y-7); ctx.closePath(); ctx.fill();
-      ctx.beginPath(); ctx.moveTo(s.x,s.y+26); ctx.lineTo(s.x-7,s.y+7); ctx.lineTo(s.x+7,s.y+7); ctx.closePath(); ctx.fill();
-      ctx.beginPath(); ctx.moveTo(s.x-26,s.y); ctx.lineTo(s.x-7,s.y-7); ctx.lineTo(s.x-7,s.y+7); ctx.closePath(); ctx.fill();
-    }else if(b.type==='barracks'){
-      ctx.fillStyle='#374151'; ctx.fillRect(s.x-26,s.y-26,52,52);
-      ctx.fillStyle='#9ca3af'; ctx.fillRect(s.x-20,s.y-12,40,24);
-      ctx.fillStyle='#e5e7eb'; ctx.fillRect(s.x-6,s.y-6,12,12);
-      ctx.strokeStyle='#f59e0b'; ctx.setLineDash([6,4]); ctx.strokeRect(s.x-26,s.y-26,52,52); ctx.setLineDash([]);
-    }else if(b.type==='tc'){
-      ctx.fillStyle='#3b82f6'; ctx.fillRect(s.x-34,s.y-28,68,56);
-      ctx.fillStyle='#93c5fd'; ctx.fillRect(s.x-22,s.y-14,44,28);
-      ctx.fillStyle='#1e293b'; ctx.fillRect(s.x-8,s.y-6,16,16);
-    }
-    // HP bar
-    ctx.fillStyle='#000a'; ctx.fillRect(s.x-22,s.y+28,44,6);
-    ctx.fillStyle='#10b981'; ctx.fillRect(s.x-22,s.y+28, 44*(b.hp/b.max),6);
-    ctx.strokeStyle='#000'; ctx.strokeRect(s.x-22,s.y+28,44,6);
-  }
-
-  // units
-  for(const u of [...friendly,...enemy]){
-    const s=toScreen(u);
-    ctx.beginPath(); ctx.arc(s.x,s.y,u.r,0,Math.PI*2);
-    if(u.team===1) ctx.fillStyle=(u.type==='villager')?'#22c55e':'#2563eb';
-    else ctx.fillStyle='#ef4444';
-    ctx.fill();
-    // selection ring
-    if(selected.has(u)){ ctx.lineWidth=3; ctx.strokeStyle='#eab308'; ctx.beginPath(); ctx.arc(s.x,s.y,u.r+4,0,Math.PI*2); ctx.stroke(); }
-    // hp
-    ctx.fillStyle='#000a'; ctx.fillRect(s.x-14,s.y+u.r+4,28,5);
-    ctx.fillStyle='#16a34a'; ctx.fillRect(s.x-14,s.y+u.r+4,28*(u.hp/u.max),5);
-  }
+function drawBuilding(b){
+  const key = ({tc:'tc',house:'house',mill:'mill',barracks:'barracks'})[b.type];
+  drawBillboard(key, b.x,b.y, 0);
+  // HP bar
+  const c=worldToScreen(b.x,b.y); ctx.fillStyle='#000a'; ctx.fillRect(c.x-24,c.y+18,48,6);
+  ctx.fillStyle='#16a34a'; ctx.fillRect(c.x-24,c.y+18,48*(b.hp/b.max),6); ctx.strokeStyle='#000'; ctx.strokeRect(c.x-24,c.y+18,48,6);
+}
+function drawUnit(u){
+  const key = (u.type==='villager'?'villager':u.type==='militia'?'militia':u.type==='archer'?'archer':'villager');
+  drawBillboard(key, u.x,u.y, u.frame||0);
+  if(selected.has(u)){ const s=worldToScreen(u.x,u.y); ctx.lineWidth=3; ctx.strokeStyle='#eab308'; ctx.beginPath(); ctx.arc(s.x,s.y-6,14,0,Math.PI*2); ctx.stroke(); }
+}
+function render(){
+  ctx.fillStyle='#13282b'; ctx.fillRect(0,0,CW/DPR,CH/DPR);
+  const tl=screenToWorld(0,0), br=screenToWorld(CW/DPR,CH/DPR);
+  const minx=clamp(Math.floor(tl.x)-2,0,map.w-1), maxx=clamp(Math.floor(br.x)+2,0,map.w-1);
+  const miny=clamp(Math.floor(tl.y)-2,0,map.h-1), maxy=clamp(Math.floor(br.y)+2,0,map.h-1);
+  for(let y=miny;y<=maxy;y++) for(let x=minx;x<=maxx;x++) drawTileIso(x,y,terrain[x+y*map.w]);
+  for(const t of trees)  if(t.hp>0) drawBillboard('tree', t.x,t.y);
+  for(const r of rocks)  if(r.hp>0) drawBillboard('rock', r.x,r.y);
+  for(const g of golds)  if(g.hp>0) drawBillboard('gold', g.x,g.y);
+  for(const b of buildings) drawBuilding(b);
+  const drawU=[...friendly.map(u=>({y:u.y,u})), ...enemy.map(u=>({y:u.y,u}))].sort((a,b)=>a.y-b.y);
+  for(const e of drawU) drawUnit(e.u);
+  // Fog/Vignette
+  const grd=ctx.createRadialGradient(CW/DPR/2,CH/DPR/2, Math.min(CW,CH)/DPR*.25, CW/DPR/2,CH/DPR/2, Math.max(CW,CH)/DPR*.75);
+  grd.addColorStop(0,'rgba(0,0,0,0)'); grd.addColorStop(1,'rgba(0,0,0,.15)'); ctx.fillStyle=grd; ctx.fillRect(0,0,CW/DPR,CH/DPR);
+  // Auswahlrechteck
+  if(dragging&&dragStart){const a=dragStart,b={x:mx,y:my}; ctx.fillStyle='rgba(59,130,246,.15)'; ctx.strokeStyle='rgba(59,130,246,.9)'; ctx.setLineDash([6,4]); ctx.fillRect(Math.min(a.x,b.x),Math.min(a.y,b.y),Math.abs(b.x-a.x),Math.abs(b.y-a.y)); ctx.strokeRect(Math.min(a.x,b.x),Math.min(a.y,b.y),Math.abs(b.x-a.x),Math.abs(b.y-a.y)); ctx.setLineDash([]);}
 }
 
-/* ======= Placement check =============================================== */
-function canPlace(x,y){
-  const far=52;
-  const ok=o=>Math.hypot(o.x-x,o.y-y)>far;
-  return buildings.every(ok) && trees.every(ok) && rocks.every(ok) && golds.every(ok) && berries.every(ok);
-}
-
-/* ======= Main loop ====================================================== */
+/* ============ Main Loop ============ */
 let last=performance.now();
 function loop(now){
-  const dt = Math.min(0.033, (now-last)/1000); last=now;
-  if(!paused && ui.start.style.display==='none'){
-    if(wavesEnabled){
-      const conf=DIFFS[difficulty], due=(res.wave===0)?conf.first:conf.every;
-      waveTimer += dt; if(waveTimer>=due){ waveTimer=0; spawnWave(); }
-    }
-    stepUnits(friendly,dt,true);
-    stepUnits(enemy,dt,false);
-    farmsPassive(dt);
-    cleanDead();
+  const dt=Math.min(0.033,(now-last)/1000); last=now;
+  if(!paused && UI.start.style.display==='none'){
+    const c=DIFF[diff], due=(res.wave===0)?c.first:c.every; if(wavesOn){ waveTimer+=dt; if(waveTimer>=due){waveTimer=0; spawnWave();} }
+    stepUnits(friendly,dt,true); stepUnits(enemy,dt,false); farmsPassive(dt); cleanDead();
   }
-  draw();
-  requestAnimationFrame(loop);
+  render(); requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 </script>
