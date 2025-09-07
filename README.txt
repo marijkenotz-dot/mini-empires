@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Mini Empires – Start & Kartenwahl</title>
+<title>Mini Empires – Sprint A</title>
 <style>
 :root{--bg:#121417;--panel:#1b1f24;--chip:#2a3037;--text:#e5e7eb}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,sans-serif}
@@ -11,6 +11,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-famil
 .chip{pointer-events:auto;background:var(--chip);padding:7px 11px;border-radius:999px;box-shadow:0 2px 0 rgba(0,0,0,.25);font-weight:700}
 #bar{position:fixed;left:0;right:0;bottom:0;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:10px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.35) 30%, rgba(0,0,0,.6));z-index:10}
 .btn{background:var(--panel);border:1px solid #2f3640;border-radius:14px;padding:8px 12px;font-weight:800;box-shadow:0 3px 0 rgba(0,0,0,.3);min-width:116px;text-align:center;color:var(--text)}
+.btn.small{min-width:auto;font-size:12px;padding:6px 8px}
 .mode{position:fixed;right:10px;bottom:84px;background:#0b3b2a;border:1px solid #14532d;border-radius:12px;padding:6px 10px;font-size:12px;font-weight:800;letter-spacing:.3px;z-index:10}
 .wave{position:fixed;right:10px;top:10px;background:#4b1d1d;border:1px solid #7f1d1d;padding:6px 10px;border-radius:10px;font-weight:800;z-index:10}
 .hint{position:fixed;left:10px;bottom:84px;opacity:.95;font-size:13px;color:#cbd5e1;z-index:10}
@@ -19,6 +20,354 @@ canvas{display:block;touch-action:none}
 /* Start-Overlay */
 #start{position:fixed;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,.8));display:flex;align-items:center;justify-content:center;z-index:50}
 .card{background:#0b1220;border:1px solid #1f2a44;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.5);padding:18px 18px 14px;max-width:620px;width:calc(100% - 32px)}
+.card h1{margin:0 0 10px;font-size:20px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.pill{border-radius:999px;padding:8px 14px;border:1px solid #334155;background:#172032;cursor:pointer;font-weight:800}
+.pill.active{outline:2px solid #38bdf8}
+.small{font-size:12px;opacity:.85}
+.startbtn{margin-top:10px;width:100%;padding:10px 14px;border-radius:12px;background:#1c3e1f;border:1px solid #2a6a2f;font-weight:900;letter-spacing:.3px}
+</style>
+</head>
+<body>
+
+<!-- HUD -->
+<div id="hud" hidden>
+  <div class="chip">🌲 Holz: <span id="wood">0</span></div>
+  <div class="chip">🍞 Nahrung: <span id="food">150</span></div>
+  <div class="chip">🪨 Stein: <span id="stone">0</span></div>
+  <div class="chip">🪙 Gold: <span id="gold">0</span></div>
+  <div class="chip">👥 Bev.: <span id="pop">0/8</span></div>
+  <div class="chip">🎯 Ausgew.: <span id="sel">0</span></div>
+  <button class="chip" id="bell">🔔 Stadtglocke</button>
+  <button class="chip" id="ungarrison" style="display:none;">🚪 Entlassen</button>
+</div>
+<div class="wave" hidden>Welle: <span id="wave">0</span></div>
+<div class="hint" hidden>Tippen: bewegen/auswählen • Ziehen: Mehrfachauswahl • Auf Ressource: sammeln • Doppeltipp: Stop • Gebäude antippen → Rally setzen durch Tippen auf Boden</div>
+<div class="mode" id="mode" hidden>Modus: Normal</div>
+
+<!-- Spiel-Canvas -->
+<canvas id="game" width="960" height="540"></canvas>
+
+<!-- Action-Bar -->
+<div id="bar" hidden>
+  <button class="btn" id="spawnVillager">+ Dorfbewohner (50 🍞)</button>
+  <button class="btn" id="trainMilitia">🛡️ Miliz (60 🍞)</button>
+  <button class="btn" id="trainArcher">🏹 Bogenschütze (30 🍞 / 30 🪙)</button>
+  <button class="btn" id="buildHouse">🏠 Haus (30 🌲)</button>
+  <button class="btn" id="buildFarm">🌾 Farm (40 🌲)</button>
+  <button class="btn" id="buildMill">🛖 Mühle (50 🌲)</button>
+  <button class="btn" id="buildBarracks">🏰 Kaserne (60 🌲 / 20 🪨)</button>
+  <button class="btn" id="buildTower">🏹 Turm (90 🪨 / 30 🌲)</button>
+  <button class="btn" id="buildWall">🧱 Wand (6 🪨 / Segment)</button>
+  <button class="btn" id="pauseBtn">⏸ Pause</button>
+</div>
+
+<!-- Start-Overlay -->
+<div id="start">
+  <div class="card">
+    <h1>Spiel starten</h1>
+    <div class="small">1) Schwierigkeit</div>
+    <div class="row" id="row-diff">
+      <div class="pill active" data-diff="leicht">Leicht</div>
+      <div class="pill" data-diff="normal">Mittel</div>
+      <div class="pill" data-diff="hart">Schwer</div>
+      <div class="pill" data-diff="frieden" title="keine Wellen">Friedlich</div>
+    </div>
+    <div class="small">2) Karte</div>
+    <div class="row" id="row-map">
+      <div class="pill active" data-map="wiese">Wiese</div>
+      <div class="pill" data-map="wald">Waldreich</div>
+      <div class="pill" data-map="berge">Bergland</div>
+    </div>
+    <button id="btn-start" class="startbtn">🎮 Spiel starten</button>
+  </div>
+</div>
+
+<script>
+/* ===== Helpers & Base ===== */
+const cvs=document.getElementById('game'), ctx=cvs.getContext('2d'), W=cvs.width, H=cvs.height, TILE=48;
+const $=sel=>document.querySelector(sel);
+const r=(a,b)=>Math.random()*(b-a)+a, clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+let paused=false, wavesEnabled=true, difficulty='leicht';
+let buildMode=null, wallPreview=null, rallyMode=false, selectedBuilding=null;
+let lastTap=0,_mouse=null,dragStart=null,dragging=false;
+
+/* ===== UI refs & HUD ===== */
+const UI={wood:$('#wood'),food:$('#food'),stone:$('#stone'),gold:$('#gold'),pop:$('#pop'),sel:$('#sel'),wave:$('#wave'),mode:$('#mode')};
+function showHUD(on){ ['#hud','#bar','#mode','.hint','.wave'].forEach(id=>$(id).hidden=!on); }
+function updateHUD(){ UI.wood.textContent=res.wood; UI.food.textContent=res.food; UI.stone.textContent=res.stone; UI.gold.textContent=res.gold; UI.pop.textContent=`${friendly.length}/${res.cap}`; UI.sel.textContent=selected.size||0; UI.wave.textContent=res.wave; }
+
+/* ===== Game State ===== */
+const res={wood:0,food:150,stone:0,gold:0,cap:8,wave:0};
+const trees=[],rocks=[],golds=[],berries=[],buildings=[],walls=[],friendly=[],enemy=[]; // buildings may be sites or complete
+const selected=new Set();
+let waveTimer=0;
+const DIFFS={frieden:{first:1e9,every:1e9,waveSize:w=>0},leicht:{first:240,every:150,waveSize:w=>1+w},normal:{first:150,every:120,waveSize:w=>2+Math.floor(w*1.5)},hart:{first:90,every:90,waveSize:w=>3+w*2}};
+
+/* ===== Entities ===== */
+function addBuilding(type,x,y,site=false){
+  const S={house:18,farm:20,mill:21,barracks:26,tc:30,tower:18}[type];
+  const HP={house:240,farm:240,mill:280,barracks:380,tc:560,tower:420}[type];
+  const drop={house:0,farm:0,mill:1,barracks:0,tc:1,tower:0}[type];
+  const b={type,x,y,w:S*2,h:S*2,hp:site?HP*0.2:HP,max:HP,dropoff:!!drop,site:site,progress:site?0:1,buildTime: type==='tower'?18: (type==='barracks'?20: (type==='mill'?16: (type==='farm'?12: (type==='house'?10:24)))) , builders:0, rally:null, queue:[], cd:0, garrison:[]};
+  buildings.push(b); return b;
+}
+function villager(x,y){return{team:1,type:'villager',x,y,r:12,tx:x,ty:y,speed:120,task:null,target:null,_t:0,hp:60,max:60,atk:4,range:16,rate:1,last:0,carry:{type:null,amt:0,cap:10},remember:null}}
+function militia(x,y){return{team:1,type:'militia',x,y,r:13,tx:x,ty:y,speed:135,task:null,target:null,_t:0,hp:90,max:90,atk:10,range:16,rate:0.75,last:0}}
+function archer (x,y){return{team:1,type:'archer', x,y,r:12,tx:x,ty:y,speed:130,task:null,target:null,_t:0,hp:70,max:70,atk:8, range:85,rate:0.8,last:0}}
+function raider (x,y){return{team:2,type:'raider', x,y,r:13,tx:x,ty:y,speed:115,task:'raid',target:null,_t:0,hp:65,max:65,atk:8, range:16,rate:0.9,last:0}}
+
+/* ===== Map / Start ===== */
+let chosenDiff='leicht', chosenMap='wiese';
+document.querySelectorAll('#row-diff .pill').forEach(p=>p.onclick=()=>{document.querySelectorAll('#row-diff .pill').forEach(x=>x.classList.remove('active')); p.classList.add('active'); chosenDiff=p.dataset.diff;});
+document.querySelectorAll('#row-map .pill').forEach(p=>p.onclick=()=>{document.querySelectorAll('#row-map .pill').forEach(x=>x.classList.remove('active')); p.classList.add('active'); chosenMap=p.dataset.map;});
+$('#btn-start').onclick=()=>startGame(chosenMap,chosenDiff);
+
+function scatter(list,n,rad,padTop=90){ for(let i=0;i<n;i++) list.push({x:r(50,W-50),y:r(padTop,H-70),hp:rad*3,max:rad*3}); }
+function startGame(map,diff){
+  difficulty=diff; wavesEnabled=diff!=='frieden';
+  trees.length=rocks.length=golds.length=berries.length=buildings.length=walls.length=friendly.length=enemy.length=0; selected.clear();
+  Object.assign(res,{wood:0,food:150,stone:0,gold:0,cap:8,wave:0}); waveTimer=0;
+  const S={wiese:{t:22,r:12,g:10,b:10},wald:{t:36,r:10,g:8,b:8},berge:{t:16,r:18,g:16,b:8}}[map]||{t:22,r:12,g:10,b:10};
+  scatter(trees,S.t,18); scatter(rocks,S.r,18); scatter(golds,S.g,18); scatter(berries,S.b,16);
+  const tc=addBuilding('tc', W/2, H/2, false);
+  friendly.push(villager(W/2-24,H/2-8), villager(W/2+24,H/2-8), villager(W/2,H/2+28));
+  selectUnits([friendly[0],friendly[1],friendly[2]]);
+  updateHUD();
+  $('#start').style.display='none'; showHUD(true);
+}
+
+/* ===== Selection & Commands ===== */
+function selectUnits(arr){ selected.clear(); arr.forEach(u=>selected.add(u)); updateHUD(); }
+function selectOne(u){ selected.clear(); if(u) selected.add(u); updateHUD(); }
+function selectRect(x1,y1,x2,y2){ const minx=Math.min(x1,x2),maxx=Math.max(x1,x2),miny=Math.min(y1,y2),maxy=Math.max(y1,y2); selected.clear(); for(const u of friendly) if(u.x>=minx&&u.x<=maxx&&u.y>=miny&&u.y<=maxy) selected.add(u); if(selected.size===0 && friendly[0]) selected.add(friendly[0]); updateHUD(); }
+function setTask(u,kind,target){ u.task=kind; u.target=target; u.tx=target.x; u.ty=target.y; u._t=0; }
+
+/* ===== Input ===== */
+function pos(e){ const b=cvs.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:t.clientX-b.left,y:t.clientY-b.top}; }
+function pickUnit(list,x,y){ return list.find(u=>Math.hypot(u.x-x,u.y-y)<u.r+8); }
+function pickObj(list,x,y,rad){ return list.find(o=>Math.hypot(o.x-x,o.y-y)<rad && (o.hp===undefined || o.hp>0)); }
+
+cvs.addEventListener('pointerdown',onDown,{passive:true});
+cvs.addEventListener('pointermove',onMove,{passive:true});
+cvs.addEventListener('pointerup',onUp,{passive:true});
+
+function onDown(e){
+  if($('#start').style.display!=='none') return;
+  if(paused) return;
+  const p=pos(e); _mouse=p; dragStart=p; dragging=false;
+  const now=performance.now(), dbl=now-lastTap<250; lastTap=now;
+
+  const hitB = buildings.find(b=>Math.hypot(b.x-p.x,b.y-p.y) < (b.w/2)+6);
+  if(hitB && !buildMode){
+    // Gebäude wählen; Rally-Setzen wenn nächster Klick auf Boden
+    selectedBuilding = hitB;
+    rallyMode = true;
+    UI.mode.hidden=false; UI.mode.textContent = `Rally für ${hitB.type.toUpperCase()} setzen: tippe Boden`;
+    return;
+  }
+
+  // Rally setzen?
+  if(rallyMode && selectedBuilding && !hitB){
+    selectedBuilding.rally = {x:p.x,y:p.y};
+    rallyMode=false; selectedBuilding=null; UI.mode.textContent='Modus: Normal'; UI.mode.hidden=true;
+    return;
+  }
+
+  // Einheit wählen?
+  const hit=pickUnit(friendly,p.x,p.y);
+  if(hit && !dbl && !buildMode){ selectOne(hit); return; }
+
+  // Bauen aktiv?
+  if(buildMode){
+    if(buildMode==='wall'){ wallPreview={x1:p.x,y1:p.y,x2:p.x,y2:p.y}; return; }
+    placeSite(buildMode,p.x,p.y); return;
+  }
+
+  // Doppeltipp → Stop
+  if(dbl){ for(const u of selected){u.task=null;u.target=null;u.tx=u.x;u.ty=u.y;u.remember=null;} return; }
+
+  // Ressourcen / Gegner / Farm
+  const tTree=pickObj(trees,p.x,p.y,22), tRock=pickObj(rocks,p.x,p.y,22), tGold=pickObj(golds,p.x,p.y,22), tBerry=pickObj(berries,p.x,p.y,20);
+  const fFarm=buildings.find(b=>!b.site && b.type==='farm' && Math.hypot(b.x-p.x,b.y-p.y)<26);
+  const foe=pickUnit(enemy,p.x,p.y);
+
+  if(tTree||tRock||tGold||tBerry||fFarm){
+    for(const u of selected){
+      if(u.type!=='villager') continue;
+      const tgt=tTree||tRock||tGold||tBerry||fFarm;
+      const kind=tTree?'wood':tRock?'stone':tGold?'gold':tBerry?'food-node':'farm';
+      setTask(u,kind,tgt); u.remember={kind,target:tgt};
+    }
+    return;
+  }
+  if(foe){ for(const u of selected){u.task='attack';u.target=foe;u.tx=foe.x;u.ty=foe.y;} return; }
+
+  // Bewegung
+  let i=0; for(const u of selected){const offx=((i%3)-1)*10,offy=(Math.floor(i/3)-1)*10;i++;u.task='move';u.target=null;u.tx=p.x+offx;u.ty=p.y+offy;u.remember=null;}
+}
+function onMove(e){
+  _mouse=pos(e);
+  if(buildMode==='wall' && wallPreview){ wallPreview.x2=_mouse.x; wallPreview.y2=_mouse.y; }
+  if(!dragStart) return;
+  const dx=_mouse.x-dragStart.x, dy=_mouse.y-dragStart.y; dragging=Math.hypot(dx,dy)>12;
+}
+function onUp(){ if(dragging && dragStart && _mouse) selectRect(dragStart.x,dragStart.y,_mouse.x,_mouse.y); if(buildMode==='wall' && wallPreview){ placeWall(wallPreview); wallPreview=null; } dragStart=null; dragging=false; }
+
+/* ===== Building placement & costs (Sites + Build time) ===== */
+function canPlace(x,y){ const far=50, ok=o=>Math.hypot(o.x-x,o.y-y)>far; return buildings.every(ok)&&trees.every(ok)&&rocks.every(ok)&&golds.every(ok)&&berries.every(ok); }
+function costPay(c){ for(const k in c) if((res[k]||0)<c[k]) return false; for(const k in c) res[k]-=c[k]; updateHUD(); return true; }
+function placeSite(type,x,y){
+  const costs={house:{wood:30}, farm:{wood:40}, mill:{wood:50}, barracks:{wood:60,stone:20}, tower:{stone:90,wood:30}}[type];
+  if(!costs) return;
+  if(!canPlace(x,y)) return;
+  if(!costPay(costs)) return;
+  addBuilding(type,x,y,true); // Baustelle
+  buildMode=null; UI.mode.hidden=true;
+}
+function placeWall(seg){
+  const dx=seg.x2-seg.x1, dy=seg.y2-seg.y1, len=Math.hypot(dx,dy), n=Math.max(1,Math.floor(len/20));
+  const need=6*n; if(res.stone<need) return;
+  res.stone-=need; updateHUD();
+  for(let i=0;i<=n;i++){ const t=i/n, x=seg.x1+dx*t, y=seg.y1+dy*t; walls.push({x,y,hp:150,max:150}); }
+}
+
+/* ===== Buttons ===== */
+$('#buildHouse').onclick=()=>{buildMode='house'; UI.mode.hidden=false; UI.mode.textContent='Modus: Bauen – Haus';};
+$('#buildFarm').onclick =()=>{buildMode='farm';  UI.mode.hidden=false; UI.mode.textContent='Modus: Bauen – Farm';};
+$('#buildMill').onclick =()=>{buildMode='mill';  UI.mode.hidden=false; UI.mode.textContent='Modus: Bauen – Mühle';};
+$('#buildBarracks').onclick=()=>{buildMode='barracks'; UI.mode.hidden=false; UI.mode.textContent='Modus: Bauen – Kaserne';};
+$('#buildTower').onclick=()=>{buildMode='tower'; UI.mode.hidden=false; UI.mode.textContent='Modus: Bauen – Turm';};
+$('#buildWall').onclick =()=>{buildMode='wall';  UI.mode.hidden=false; UI.mode.textContent='Modus: Bauen – Wand (ziehen)';};
+$('#pauseBtn').onclick  =()=>{paused=!paused; $('#pauseBtn').textContent=paused?'▶ Weiter':'⏸ Pause';};
+
+/* ===== Production: Queues & Rally ===== */
+const unitTime={ villager:10, militia:12, archer:12 }; // Sekunden
+function firstBuilding(type){ return buildings.find(b=>!b.site && b.type===type); }
+
+$('#spawnVillager').onclick=()=>{
+  const tc=firstBuilding('tc'); if(!tc) return;
+  if(res.food<50 || friendly.length>=res.cap) return;
+  res.food-=50; updateHUD();
+  tc.queue.push({kind:'villager', t:unitTime.villager});
+};
+$('#trainMilitia').onclick=()=>{
+  const b=firstBuilding('barracks'); if(!b) return;
+  if(res.food<60 || friendly.length>=res.cap) return;
+  res.food-=60; updateHUD();
+  b.queue.push({kind:'militia', t:unitTime.militia});
+};
+$('#trainArcher').onclick=()=>{
+  const b=firstBuilding('barracks'); if(!b) return;
+  if(res.food<30 || res.gold<30 || friendly.length>=res.cap) return;
+  res.food-=30; res.gold-=30; updateHUD();
+  b.queue.push({kind:'archer', t:unitTime.archer});
+};
+
+function processProduction(dt){
+  for(const b of buildings){
+    if(b.site) continue;
+    if(!b.queue || b.queue.length===0) continue;
+    b.queue[0].t -= dt;
+    if(b.queue[0].t<=0){
+      const item=b.queue.shift();
+      let u=null;
+      if(item.kind==='villager') u=villager(b.x,b.y);
+      if(item.kind==='militia')  u=militia(b.x,b.y);
+      if(item.kind==='archer')   u=archer(b.x,b.y);
+      if(u){ 
+        // Rally
+        if(b.rally){ u.x=b.x; u.y=b.y; u.tx=b.rally.x; u.ty=b.rally.y; u.task='move'; }
+        friendly.push(u); updateHUD();
+      }
+    }
+  }
+}
+
+/* ===== Town Bell / Garrison ===== */
+const bellBtn=$('#bell'), ungarrisonBtn=$('#ungarrison');
+bellBtn.onclick=()=>{
+  const tc=firstBuilding('tc'); if(!tc) return;
+  for(const u of friendly){ if(u.type==='villager'){ u.task='garrison'; u.target=tc; u.tx=tc.x; u.ty=tc.y; } }
+  ungarrisonBtn.style.display='inline-block';
+};
+ungarrisonBtn.onclick=()=>{
+  const tc=firstBuilding('tc'); if(!tc) return;
+  // entlassen
+  while(tc.garrison.length){
+    const u=tc.garrison.pop();
+    u.x=tc.x+r(-40,40); u.y=tc.y+r(-30,30);
+    u.tx=u.x; u.ty=u.y; u.task=null; friendly.push(u);
+  }
+  ungarrisonBtn.style.display='none';
+};
+
+/* ===== Waves ===== */
+function spawnWave(){
+  const conf=DIFFS[difficulty], n=Math.max(0,Math.floor(conf.waveSize(res.wave)));
+  if(n<=0) return; res.wave++;
+  for(let i=0;i<n;i++){
+    const edge=Math.floor(r(0,4)); let x,y;
+    if(edge===0){x=-20;y=r(60,H-60);} if(edge===1){x=W+20;y=r(60,H-60);}
+    if(edge===2){x=r(60,W-60);y=-20;} if(edge===3){x=r(60,W-60);y=H+20;}
+    enemy.push(raider(x,y));
+  } updateHUD();
+}
+
+/* ===== Simulation ===== */
+function nearestDropoff(obj){ let best=null,bd=1e9; for(const b of buildings){ if(b.dropoff && !b.site){const d=Math.hypot(b.x-obj.x,b.y-obj.y); if(d<bd){bd=d;best=b;}} } return best; }
+function nearestInSight(u,list,sight){ let best=null,bd=1e9; for(const t of list){ if(t.hp>0){ const d=dist(u,t); if(d<bd && d<=sight){ bd=d; best=t; } } } return best; }
+function findNearestTarget(u,list){ let best=null,bd=1e9; for(const t of list){ if(t.hp>0){ const d=dist(u,t); if(d<bd){ bd=d; best=t; } } } return best; }
+function damage(obj,amt){ obj.hp=clamp(obj.hp-amt,0,obj.max); }
+
+function stepUnits(list,dt,isFriendly){
+  for(let i=list.length-1;i>=0;i--){
+    const u=list[i];
+
+    // Gegner-Zielwahl
+    if(!isFriendly && (!u.target || u.target.hp<=0)){
+      u.target=findNearestTarget(u,[...buildings,...friendly,...walls]);
+      if(u.target){u.tx=u.target.x;u.ty=u.target.y;}
+    }
+    if(isFriendly && u.task==='attack' && u.target && u.target.hp<=0){u.task=null;}
+
+    // Bewegung
+    const dx=u.tx-u.x, dy=u.ty-u.y, d=Math.hypot(dx,dy);
+    if(d>1){const s=u.speed*dt; u.x+=(dx/d)*Math.min(s,d); u.y+=(dy/d)*Math.min(s,d);}
+
+    // Bau-Aufgaben (Villager)
+    if(isFriendly && u.type==='villager'){
+      // Garrison
+      if(u.task==='garrison' && d<=18){
+        // in TC aufnehmen
+        const tc=u.target; if(tc && tc.type==='tc'){ list.splice(i,1); tc.garrison.push(u); updateHUD(); continue; }
+      }
+
+      // Sammeln
+      if(u.task && d<=14){
+        u._t+=dt; if(u._t>=0.5){u._t=0;
+          if(u.task==='wood' && u.target?.hp>0){u.target.hp-=2;u.carry.type='wood';u.carry.amt+=2;}
+          else if(u.task==='stone' && u.target?.hp>0){u.target.hp-=2;u.carry.type='stone';u.carry.amt+=2;}
+          else if(u.task==='gold' && u.target?.hp>0){u.target.hp-=2;u.carry.type='gold';u.carry.amt+=2;}
+          else if(u.task==='food-node' && u.target?.hp>0){u.target.hp-=2;u.carry.type='food';u.carry.amt+=2;}
+          else if(u.task==='farm'){u.carry.type='food';u.carry.amt+=3;}
+          if(u.carry.amt>=u.carry.cap){const dpo=nearestDropoff(u); if(dpo){u.task='return';u.target=dpo;u.tx=dpo.x;u.ty=dpo.y;}}
+        }
+      }
+      if(u.task==='return' && d<=18){
+        if(u.carry.type){res[u.carry.type]+=u.carry.amt; u.carry.amt=0; updateHUD();}
+        if(u.remember && u.remember.target?.hp>0){setTask(u,u.remember.kind,u.remember.target);} else u.task=null;
+      }
+
+      // Bauen: wenn Ziel Baustelle ist
+      if(u.task==='build' && u.target && u.target.site){
+        if(d<=18){ u._t+=dt; if(u._t>=0.25){u._t=0; u.target.progress += 0.02; u.target.hp = clamp(u.target.hp + u.target.max*0.02,0,u.target.max); if(u.target.progress>=1){ u.target.site=false; u.target.progress=1; } } }
+      }
+    }
+
+    // Auto-Kampf
+    const foes=isFriendly?enemy.card{background:#0b1220;border:1px solid #1f2a44;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.5);padding:18px 18px 14px;max-width:620px;width:calc(100% - 32px)}
 .card h1{margin:0 0 10px;font-size:20px}
 .row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
 .pill{border-radius:999px;padding:8px 14px;border:1px solid #334155;background:#172032;cursor:pointer;font-weight:800}
