@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <title>Mini Empires</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0e1116">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <style>
+    html, body { margin:0; padding:0; height:100%; background:#0e1116; color:#e6e6e6; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+    #ui { position: fixed; inset: 0 0 auto 0; display:flex; gap:.5rem; padding:.6rem; background: linear-gradient(180deg, rgba(14,17,22,.9), rgba(14,17,22,.35) 70%, transparent); align-items:center; flex-wrap: wrap; }
+    .pill { border:1px solid #2a2f39; background:#171b22; padding:.45rem .7rem; border-radius:999px; font-weight:600; display:flex; align-items:center; gap:.45rem; box-shadow: 0 2px 8px rgba(0,0,0,.25) inset, 0 2px 8px rgba(0,0,0,.25); }
+    .pill .dot{ width:.65rem; height:.65rem; border-radius:50%; display:inline-block }
+    .wood .dot{ background:#a7794c }
+    .food .dot{ background:#86c06a }
+    .stone .dot{ background:#9aa3ad }
+    .gold .dot{ background:#e0c75a }
+
+    #actions { position: fixed; inset: auto 0 .6rem 0; display:flex; gap:.6rem; padding:.6rem; justify-content:center; flex-wrap:wrap; }
+    button { -webkit-tap-highlight-color: transparent; appearance:none; border:1px solid #2a2f39; background:#1a1f28; color:#e6e6e6; border-radius:14px; padding:.7rem 1rem; font-weight:700; letter-spacing:.2px; box-shadow: 0 10px 24px rgba(0,0,0,.35); }
+    button:active { transform: translateY(1px) scale(.99); }
+
+    #hint { position: fixed; right:.6rem; bottom:4.5rem; font-size:.85rem; opacity:.75 }
+    #toast { position: fixed; left:50%; transform:translateX(-50%); bottom: 50%; background:#161a21; border:1px solid #303646; padding:.6rem .8rem; border-radius:12px; display:none }
+
+    canvas { display:block; width:100vw; height:100vh; touch-action:none; }
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <div class="pill wood"><span class="dot"></span>Holz: <span id="wood">0</span></div>
+    <div class="pill food"><span class="dot"></span>Nahrung: <span id="food">150</span></div>
+    <div class="pill stone"><span class="dot"></span>Stein: <span id="stone">0</span></div>
+    <div class="pill gold"><span class="dot"></span>Gold: <span id="gold">0</span></div>
+    <div class="pill"><span>Bev.: <span id="pop">1</span>/<span id="cap">5</span></span></div>
+    <div class="pill"><span>Welle: <span id="wave">0</span></span></div>
+  </div>
+
+  <div id="actions">
+    <button id="makeVillager">👤 Dorfbewohner (50 🍖)</button>
+    <button id="buildHouse">🏠 Haus (30 🪵)</button>
+    <button id="buildMill">🏚️ Mühle (40 🪵)</button>
+    <button id="garrison">🏰 Garnison</button>
+    <button id="pause">⏸️ Pause</button>
+  </div>
+
+  <div id="hint">Tippen: auswählen/Bewegen · Doppeltippen: Sammeln/Angreifen · Zwei Finger: Karte verschieben</div>
+  <div id="toast"></div>
+
+  <canvas id="game" width="1280" height="720"></canvas>
+
+<script>
+(function(){
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const DPR = Math.max(1, Math.min(3, window.devicePixelRatio||1));
+  function resize(){
+    const {innerWidth:w, innerHeight:h} = window;
+    canvas.style.width = w+"px"; canvas.style.height = h+"px";
+    canvas.width = Math.floor(w*DPR); canvas.height = Math.floor(h*DPR);
+  }
+  resize();
+  addEventListener('resize', resize);
+
+  // UI refs
+  const ui = {
+    wood: document.getElementById('wood'),
+    food: document.getElementById('food'),
+    stone: document.getElementById('stone'),
+    gold: document.getElementById('gold'),
+    pop: document.getElementById('pop'),
+    cap: document.getElementById('cap'),
+    wave: document.getElementById('wave'),
+    toast: document.getElementById('toast'),
+  };
+  function toast(msg, ms=1200){
+    ui.toast.textContent = msg; ui.toast.style.display='block';
+    clearTimeout(toast._t); toast._t = setTimeout(()=>ui.toast.style.display='none', ms);
+  }
+
+  // Camera
+  const cam = { x:-400, y:-300, scale:1 };
+  const world = { w: 2400, h: 1800 };
+
+  // Game state
+  const state = {
+    res: { wood:0, food:150, stone:0, gold:0 },
+    pop: 1, cap:5, wave:0, paused:false,
+    units: [], buildings: [], resources: [], enemies: [], projectiles: [],
+    selected: new Set(), tc:null, tick:0
+  };
+
+  // Helpers
+  function rand(min,max){ return Math.random()*(max-min)+min }
+  function dist(a,b){ const dx=a.x-b.x, dy=a.y-b.y; return Math.hypot(dx,dy) }
+  function clamp(v, a,b){ return Math.max(a, Math.min(b, v)) }
+
+  // Entities
+  function spawnTC(x,y){
+    const tc = { type:'tc', x, y, r:36, hp:800, maxhp:800, cap:5, garrison:[], cooldown:0 };
+    state.buildings.push(tc); state.tc = tc; return tc;
+  }
+  function spawnHouse(x,y){ state.buildings.push({ type:'house', x,y, r:22, hp:250, maxhp:250, cap:2 }); state.cap+=2; ui.cap.textContent=state.cap; }
+  function spawnMill(x,y){ state.buildings.push({ type:'mill', x,y, r:20, hp:220, maxhp:220 }); }
+  function spawnVillager(x,y){
+    const v = { type:'v', x,y, r:10, hp:40, maxhp:40, speed:1.2, task:null, carrying:null, carryAmt:0, target:null };
+    state.units.push(v); state.pop++; ui.pop.textContent=state.pop; return v;
+  }
+  function spawnEnemy(x,y){ state.enemies.push({ type:'e', x,y, r:12, hp:35, maxhp:35, speed:1.0, target:null, atk:5, cd:0 }); }
+
+  function spawnResource(kind, x,y, amt){ state.resources.push({ kind, x,y, r:14, amt }); }
+
+  // World gen
+  function gen(){
+    const tc = spawnTC(world.w/2, world.h/2);
+    spawnVillager(tc.x+60, tc.y);
+    // clusters of trees and berries
+    for(let i=0;i<80;i++) spawnResource('wood', rand(200,world.w-200), rand(200,world.h-200), rand(80,150));
+    for(let i=0;i<25;i++) spawnResource('food', rand(200,world.w-200), rand(200,world.h-200), rand(60,120));
+  }
+  gen();
+
+  // Input
+  let pointer = {x:0,y:0, down:false, lastTap:0, dragging:false, id:null, startCam:null, start:{x:0,y:0}};
+  let secondFinger = null;
+  canvas.addEventListener('pointerdown', (e)=>{
+    if(pointer.down && e.pointerId!==pointer.id){ secondFinger = {id:e.pointerId, x:e.clientX, y:e.clientY}; return; }
+    pointer.id = e.pointerId; pointer.down=true; pointer.dragging=false; pointer.start={x:e.clientX,y:e.clientY}; pointer.startCam={x:cam.x,y:cam.y};
+  });
+  canvas.addEventListener('pointermove', (e)=>{
+    if(!pointer.down) return;
+    if(secondFinger){ // two-finger pan
+      const cx = (e.clientX + secondFinger.x)/2; const cy = (e.clientY + secondFinger.y)/2;
+      cam.x = pointer.startCam.x - (cx - pointer.start.x)*(1/cam.scale);
+      cam.y = pointer.startCam.y - (cy - pointer.start.y)*(1/cam.scale);
+      return;
+    }
+    const dx = e.clientX - pointer.start.x; const dy = e.clientY - pointer.start.y;
+    if(Math.hypot(dx,dy)>10) pointer.dragging=true;
+  });
+  canvas.addEventListener('pointerup', (e)=>{
+    if(e.pointerId===pointer.id){
+      const now = performance.now();
+      const worldPos = screenToWorld(e.clientX, e.clientY);
+      if(!pointer.dragging){
+        if(now - pointer.lastTap < 300){ // double tap: gather/attack
+          handleDoubleTap(worldPos);
+        } else { // single tap: select / move
+          handleTap(worldPos);
+        }
+        pointer.lastTap = now;
+      } else {
+        // drag: move camera
+        const dx = e.clientX - pointer.start.x; const dy = e.clientY - pointer.start.y;
+        cam.x = pointer.startCam.x - dx*(1/cam.scale);
+        cam.y = pointer.startCam.y - dy*(1/cam.scale);
+      }
+      pointer.down=false; pointer.dragging=false; secondFinger=null;
+    } else if(secondFinger && e.pointerId===secondFinger.id){ secondFinger=null; }
+  });
+
+  function screenToWorld(sx,sy){
+    const rect = canvas.getBoundingClientRect();
+    const x = (sx - rect.left) * DPR; const y = (sy - rect.top) * DPR;
+    return { x: x/cam.scale + cam.x, y: y/cam.scale + cam.y };
+  }
+
+  function handleTap(pos){
+    // find unit under tap
+    const all = [...state.units, ...state.buildings, ...state.resources, ...state.enemies];
+    let hit=null, min=1e9;
+    for(const o of all){ const d = Math.hypot(o.x-pos.x, o.y-pos.y); if(d < o.r+8 && d<min){ min=d; hit=o; } }
+    if(hit){
+      if(hit.type==='v'){
+        state.selected.clear(); state.selected.add(hit); toast('Dorfbewohner ausgewählt');
+      } else if(hit.type==='tc' || hit.type==='house' || hit.type==='mill'){
+        state.selected.clear(); state.selected.add(hit); toast('Gebäude ausgewählt');
+      } else if(hit.kind){ // resource
+        // assign first selected villager
+        const v = [...state.selected].find(o=>o.type==='v');
+        if(v){ v.task='gather'; v.target=hit; toast('Sammeln'); }
+      } else if(hit.type==='e'){
+        const v = [...state.selected].find(o=>o.type==='v');
+        if(v){ v.task='attack'; v.target=hit; toast('Angriff!'); }
+      }
+    } else {
+      // move selected villager
+      const v = [...state.selected].find(o=>o.type==='v');
+      if(v){ v.task='move'; v.target={x:pos.x,y:pos.y}; toast('Bewegen'); }
+      else { state.selected.clear(); }
+    }
+  }
+
+  function handleDoubleTap(pos){
+    // prioritize resource/enemy near tap
+    const target = nearest([...state.resources, ...state.enemies], pos, 40);
+    if(target){
+      const v = [...state.selected].find(o=>o.type==='v') || state.units[0];
+      if(target.kind){ v.task='gather'; v.target=target; toast('Sammeln'); }
+      else { v.task='attack'; v.target=target; toast('Angriff!'); }
+    }
+  }
+
+  function nearest(list, pos, maxd=Infinity){
+    let best=null, bd=maxd;
+    for(const o of list){ const d = Math.hypot(o.x-pos.x, o.y-pos.y); if(d<bd){ bd=d; best=o; } }
+    return best;
+  }
+
+  // Buttons
+  document.getElementById('makeVillager').onclick = ()=>{
+    if(state.res.food>=50 && state.pop<state.cap){ state.res.food-=50; ui.food.textContent=state.res.food; state.tc.cooldown=200; state._queueTC = (state._queueTC||0)+1; toast('Ausbildung gestartet'); }
+    else toast('Nicht genug Nahrung oder Bevölkerung voll');
+  };
+  document.getElementById('buildHouse').onclick = ()=>{
+    if(state.res.wood>=30){
+      state.res.wood-=30; ui.wood.textContent=state.res.wood;
+      // place near TC
+      const angle = Math.random()*Math.PI*2; const d = 70+Math.random()*40;
+      spawnHouse(state.tc.x+Math.cos(angle)*d, state.tc.y+Math.sin(angle)*d);
+      toast('Haus gebaut (+2 Kapazität)');
+    } else toast('Nicht genug Holz');
+  };
+  document.getElementById('buildMill').onclick = ()=>{
+    if(state.res.wood>=40){
+      state.res.wood-=40; ui.wood.textContent=state.res.wood;
+      const angle = Math.random()*Math.PI*2; const d = 80+Math.random()*50;
+      spawnMill(state.tc.x+Math.cos(angle)*d, state.tc.y+Math.sin(angle)*d);
+      toast('Mühle gebaut');
+    } else toast('Nicht genug Holz');
+  };
+  document.getElementById('garrison').onclick = ()=>{
+    // move all units to TC
+    for(const v of state.units){ v.task='move'; v.target={x:state.tc.x, y:state.tc.y}; }
+    toast('Alle zur Garnison!');
+  };
+  document.getElementById('pause').onclick = ()=>{ state.paused=!state.paused; toast(state.paused?'Pausiert':'Fortgesetzt'); };
+
+  // Game loop
+  function step(){
+    if(!state.paused){
+      state.tick++;
+      // train villager
+      if(state._queueTC && state.tc.cooldown>0){ state.tc.cooldown--; if(state.tc.cooldown===0){ state._queueTC--; spawnVillager(state.tc.x+(Math.random()*60-30), state.tc.y+(Math.random()*60-30)); if(state._queueTC>0) state.tc.cooldown=200; }}
+
+      // enemy waves
+      if(state.tick % 2000 === 0){ // ~ every ~30-40s
+        state.wave++; ui.wave.textContent=state.wave;
+        for(let i=0;i<3+state.wave;i++){
+          const side = Math.floor(Math.random()*4);
+          const x = side%2? (side===1? world.w-50:50) : 50+Math.random()*(world.w-100);
+          const y = side%2? 50+Math.random()*(world.h-100) : (side===0? 50: world.h-50);
+          spawnEnemy(x,y);
+        }
+        toast('Gegnerwelle!');
+      }
+
+      // villagers AI
+      for(const v of state.units){
+        if(v.hp<=0) continue;
+        if(v.task==='gather' && v.target && v.target.amt>0){
+          if(dist(v,v.target) > v.target.r+4){ moveTowards(v, v.target, v.speed); }
+          else {
+            // gather
+            v.carrying = v.target.kind; const rate=0.2; const take = Math.min(rate, v.target.amt);
+            v.carryAmt += take; v.target.amt -= take;
+            if(v.carryAmt>=10){ v.task='return'; v.target = nearest(state.buildings, v, 200) || state.tc; }
+          }
+        } else if(v.task==='return' && v.target){
+          if(dist(v,v.target) > (v.target.r+6)){ moveTowards(v, v.target, v.speed); }
+          else { state.res[v.carrying]+=Math.floor(v.carryAmt); v.carryAmt=0; ui[v.carrying].textContent=state.res[v.carrying]; v.task='idle'; v.carrying=null; }
+        } else if(v.task==='move' && v.target){
+          if(dist(v,v.target)>4) moveTowards(v, v.target, v.speed);
+          else v.task='idle';
+        } else if(v.task==='attack' && v.target){
+          if(v.target.hp<=0) { v.task='idle'; v.target=null; continue; }
+          if(dist(v,v.target) > v.r+v.target.r+2){ moveTowards(v, v.target, v.speed*1.1); }
+          else { // melee attack
+            v._cd = (v._cd||0)-1; if(v._cd<=0){ v._cd=60; v.target.hp -= 6; if(v.target.hp<=0){ /*dead*/ }
+            }
+          }
+        } else if(v.task===null || v.task==='idle'){
+          // idle: look for nearest resource
+          const target = nearest(state.resources, v, 120);
+          if(target) { v.task='gather'; v.target=target; }
+        }
+      }
+
+      // enemies AI
+      for(const e of state.enemies){ if(e.hp<=0) continue; const tgt = state.units[0] || state.tc; e.target=tgt; if(dist(e,tgt)>e.r+tgt.r+3) moveTowards(e,tgt,e.speed); else { e.cd=(e.cd||0)-1; if(e.cd<=0){ e.cd=50; (tgt.hp-=e.atk); }}}
+
+      // cleanup dead
+      state.resources = state.resources.filter(r=>r.amt>1);
+      state.units = state.units.filter(u=>u.hp>0);
+      state.enemies = state.enemies.filter(e=>e.hp>0);
+
+      // defeat?
+      if(state.tc.hp<=0){ state.paused=true; toast('Niederlage! Seite neu laden zum Neustart', 3000); }
+    }
+    draw();
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+
+  function moveTowards(a,b,s){ const ang=Math.atan2(b.y-a.y,b.x-a.x); a.x+=Math.cos(ang)*s; a.y+=Math.sin(ang)*s; }
+
+  // Rendering
+  function draw(){
+    ctx.save();
+    ctx.scale(DPR, DPR);
+    ctx.clearRect(0,0,canvas.width/DPR, canvas.height/DPR);
+
+    // world bg grid
+    ctx.save();
+    ctx.translate(-cam.x*cam.scale, -cam.y*cam.scale);
+    ctx.scale(cam.scale, cam.scale);
+    ctx.fillStyle = '#0b1016';
+    ctx.fillRect(0,0,world.w,world.h);
+    ctx.strokeStyle='#141a22'; ctx.lineWidth=1;
+    const grid=50; ctx.beginPath();
+    for(let x=0;x<world.w;x+=grid){ ctx.moveTo(x,0); ctx.lineTo(x,world.h);} 
+    for(let y=0;y<world.h;y+=grid){ ctx.moveTo(0,y); ctx.lineTo(world.w,y);} 
+    ctx.stroke();
+
+    // resources
+    for(const r of state.resources){
+      ctx.beginPath();
+      if(r.kind==='wood'){ ctx.fillStyle='#214225'; }
+      else if(r.kind==='food'){ ctx.fillStyle='#3f4a1e'; }
+      else if(r.kind==='stone'){ ctx.fillStyle='#3a3f46'; }
+      else { ctx.fillStyle='#4d4530'; }
+      ctx.arc(r.x, r.y, r.r, 0, Math.PI*2); ctx.fill();
+      // tiny amount bar
+      ctx.fillStyle='#111'; ctx.fillRect(r.x-14, r.y+r.r+6, 28, 4);
+      ctx.fillStyle='#77c46c'; const w = Math.max(0, (r.amt/150)*28); ctx.fillRect(r.x-14, r.y+r.r+6, w, 4);
+    }
+
+    // buildings
+    for(const b of state.buildings){
+      ctx.fillStyle = (b.type==='tc')?'#2a2534': (b.type==='house')? '#262d35' : '#2f2b23';
+      roundRect(ctx, b.x-b.r, b.y-b.r, b.r*2, b.r*2, 6); ctx.fill();
+      // health bar
+      drawHP(b);
+    }
+
+    // units
+    for(const v of state.units){
+      ctx.beginPath(); ctx.fillStyle='#9dc5ff'; ctx.arc(v.x,v.y,v.r,0,Math.PI*2); ctx.fill(); drawHP(v);
+    }
+
+    // enemies
+    for(const e of state.enemies){ ctx.beginPath(); ctx.fillStyle='#ff9d9d'; ctx.arc(e.x,e.y,e.r,0,Math.PI*2); ctx.fill(); drawHP(e); }
+
+    // selection rings
+    ctx.strokeStyle='#7bdff6'; ctx.lineWidth=2;
+    for(const s of state.selected){ ctx.beginPath(); ctx.arc(s.x, s.y, s.r+4, 0, Math.PI*2); ctx.stroke(); }
+
+    ctx.restore();
+  }
+
+  function drawHP(o){
+    const pct = clamp(o.hp/o.maxhp,0,1);
+    ctx.fillStyle='#111'; ctx.fillRect(o.x-16, o.y-o.r-10, 32, 4);
+    ctx.fillStyle=pct>0.5?'#7fd17a':pct>0.25?'#d1c77a':'#d17a7a';
+    ctx.fillRect(o.x-16, o.y-o.r-10, 32*pct, 4);
+  }
+  function roundRect(ctx, x, y, w, h, r){ const rr=Math.min(r, w/2, h/2); ctx.beginPath(); ctx.moveTo(x+rr,y); ctx.arcTo(x+w,y,x+w,y+h,rr); ctx.arcTo(x+w,y+h,x,y+h,rr); ctx.arcTo(x,y+h,x,y,rr); ctx.arcTo(x,y,x+w,y,rr); ctx.closePath(); }
+
+})();
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js');
+    });
+  }
+</script>
+</body>
+</html>
