@@ -31,3 +31,4 @@ Dieses Projekt ist eigenständig und verwendet keine Marken, Namen, Grafiken ode
 aus „Age of Empires“. Für eine große, inhaltsgleiche 1:1-Kopie bräuchte man die Rechte
 des IP-Inhabers. Stattdessen kann das Spiel eigenständige Einheiten, Gebäude und eine
 eigene Tech-Tree-Logik bekommen.
+Test: GitHub Pages Build trigger
