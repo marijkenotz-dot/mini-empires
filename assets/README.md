@@ -1,0 +1,13 @@
+assets/
+  tiles_grass.png      (64×32 isometrische Gras-Tile)
+  tiles_water.png      (64×32 Wasser-Tile, optional animiert: nimm 1 Frame)
+  tree.png             (Baum 64×64, Blick leicht schräg)
+  rock.png             (Stein 64×64)
+  gold.png             (Goldvorkommen 64×64)
+  tc.png               (Town Center 96×96)
+  house.png            (Haus 80×80)
+  mill.png             (Mühle 96×96, Propeller sichtbar)
+  barracks.png         (Kaserne 96×96)
+  villager.png         (Sprite-Sheet 8 Frames, 64×64 pro Frame)
+  militia.png          (Sprite-Sheet 8 Frames, 64×64 pro Frame)
+  archer.png           (Sprite-Sheet 8 Frames, 64×64 pro Frame)
